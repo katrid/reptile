@@ -1,0 +1,26 @@
+<report title="Testing report">
+  <grid>
+    <group field="group_name">
+      <header>Field value: {{ record.group_name }} - Group value: {{ group.value }} | Total: {{ sum(group.records["price"]) }}</header>
+      <footer>
+        <div>Record count: {{ group.records|length }}</div>
+        <div h-align="right">Total records: {{ group.records|length }}</div>
+        <div h-align="right" bold="bold">Sum: {{ sum(group.records['price']) }}</div>
+      </footer>
+    </group>
+    <field name="id"/>
+    <field name="name" caption="Name" cols="4"/>
+    <field caption="Calculated Column">
+      #{{ line }} / #{{ row }}
+    </field>
+    <field name="price" h-align="right"/>
+  </grid>
+  <summary>
+    <div>
+      Total records: {{ records|length }}
+    </div>
+    <div h-align="right">
+      Summary - Total price: {{ sum(records['price']) }}
+    </div>
+  </summary>
+</report>

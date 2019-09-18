@@ -1,0 +1,7 @@
+<report title="Testing report">
+  <grid>
+    <field name="id"/>
+    <field name="name"/>
+    <field name="price" h-align="right"/>
+  </grid>
+</report>
