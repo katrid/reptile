@@ -100,7 +100,7 @@ class Report(ReportElement):
         self.totals = []
         self.datasources = {}
         self.filename: str = filename
-        self.document: Document
+        self.document: Optional[Document] = None
         if env is None and not self.env:
             self.env = ReportEngine.create_template_env()
         else:
@@ -683,7 +683,9 @@ class UNDEFINED:
 class DataGroup:
     value = UNDEFINED
     parent = None
-    _records = []
+
+    def __init__(self):
+        self._records = []
 
     @property
     def records(self):
