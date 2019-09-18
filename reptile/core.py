@@ -94,7 +94,7 @@ class ReportEngine:
 class Report(ReportElement):
     env = None
 
-    def __init__(self, filename=None, title=None, default_connection=None, env=None):
+    def __init__(self, filename=None, title=None, default_connection=None, env=None, params=None):
         super().__init__()
         self.pages: List[Page] = []
         self.totals = []
@@ -110,6 +110,10 @@ class Report(ReportElement):
         self.styles = {}
         self.default_connection: Connection = default_connection
         self.default_datasource: Optional[DataSource] = None
+        if params:
+            self.prepared_params = params
+        else:
+            self.prepared_params = None
 
     def from_string(self, s: str):
         self.read_xml(etree.fromstring(s))
@@ -496,7 +500,7 @@ class DataProxy:
         return [obj[item] for obj in self.iterable]
 
     def __iter__(self):
-        return self.iterable
+        return self.iterable or []
 
     def __len__(self):
         return len(self.iterable)
@@ -661,7 +665,7 @@ class Query(DataSource):
     @property
     def data(self):
         if self._data is None:
-            self._data = list(self.connection.execute(self.sql, self.params))
+            self._data = list(self.connection.execute(self.sql, self.report.prepared_params))
         return self._data
 
     def close(self):
@@ -749,7 +753,7 @@ class GroupHeader(HeaderBand):
 
     def prepare(self, page, context):
         self.context = context
-        if self.datasource:
+        if self.datasource is not None:
             ds = list(self.datasource.data)
             dp = DataProxy(ds)
             self.context['records'] = dp
