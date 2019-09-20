@@ -8,11 +8,11 @@ class OdbcConnection(Connection):
     def connection(self):
         import pyodbc
         if self._connection is None:
-            self._connection = pyodbc.connect(self.connectionString)
+            self._connection = pyodbc.connect(self.connection_string)
         return self._connection
 
-    def execute(self, sql):
+    def execute(self, sql, *args, **kwargs):
         conn = self.connection
         cur = conn.cursor()
-        cur.execute(sql)
+        cur.execute(sql, *args, **kwargs)
         return cur.fetchall()

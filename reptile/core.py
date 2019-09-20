@@ -59,6 +59,8 @@ class ReportElement:
             self.content = text
         for child in node:
             obj = self.create_element(child)
+            if not obj:
+                continue
             if isinstance(self, Report):
                 obj.report = self
             else:
@@ -68,7 +70,8 @@ class ReportElement:
             obj.read_xml(child)
 
     def create_element(self, child):
-        return REGISTRY[child.tag.lower()](self)
+        if child.tag in REGISTRY:
+            return REGISTRY[child.tag.lower()](self)
 
     def init(self, page):
         pass
@@ -665,7 +668,11 @@ class Query(DataSource):
     @property
     def data(self):
         if self._data is None:
-            self._data = list(self.connection.execute(self.sql, self.report.prepared_params))
+            if self.report.prepared_params:
+                args = [self.report.prepared_params]
+            else:
+                args = []
+            self._data = list(self.connection.execute(self.sql, *args))
         return self._data
 
     def close(self):
@@ -738,6 +745,8 @@ class GroupHeader(HeaderBand):
                     context['record'] = rec
                     context['even'] = self.band.even
                     context['odd'] = not self.band.even
+                    if self.datasource and self.datasource.name:
+                        context[self.datasource.name] = rec
                     self.band.prepare_row(page, context)
                 self.band.end(page, context)
                 self._end(page, self.context)
