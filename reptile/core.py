@@ -556,7 +556,7 @@ class DataBand(Band):
 
     @datasource.setter
     def datasource(self, value):
-        if value:
+        if value is not None:
             self._datasource = DataSource(value)
         else:
             self._datasource = value
