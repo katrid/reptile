@@ -59,7 +59,7 @@ class ReportElement:
             self.content = text
         for child in node:
             obj = self.create_element(child)
-            if not obj:
+            if obj is None:
                 continue
             if isinstance(self, Report):
                 obj.report = self
