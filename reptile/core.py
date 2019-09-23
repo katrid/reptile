@@ -369,6 +369,8 @@ class Page(ReportObject):
         self._y = self.margin.top
         self._ay = self.height - self.margin.top - self.margin.bottom
         self._current_page = self.document.add_page()
+        self._current_page.width = self.width
+        self._current_page.height = self.height
         self._begin()
 
 
@@ -614,6 +616,7 @@ class DataSource(ReportObject):
     def __init__(self, data=None, connection: Connection=None):
         super().__init__()
         self.name: Optional[str] = None
+        self.alias: Optional[str] = None
         self._data = data
         self._connection = connection
 
@@ -715,6 +718,8 @@ class GroupHeader(HeaderBand):
             if not self.expression and self.field:
                 self.expression = 'record.' + self.field
             assert self.expression
+            if '"' in self.expression:
+                self.expression = self.expression.replace('"', '')
             self._template_expression = self.report.env.from_string('{{ %s }}' % self.expression)
         return self._template_expression
 
@@ -773,6 +778,8 @@ class GroupHeader(HeaderBand):
                 self.context['record'] = obj
                 if self.datasource.name:
                     self.context[self.datasource.name] = obj
+                    if self.datasource.alias:
+                        self.context[self.datasource.alias] = obj
                 self.prepare_record(obj, page, self.context)
             if ds:
                 self.prepare_record(obj, page, self.context, True)
@@ -871,6 +878,8 @@ class Text(Widget):
     _text_word_wrap = 0
     paddingX = 2
     paddingY = 2
+    format_type: str = None
+    display_format: str = None
 
     def __init__(self, band=None):
         super().__init__(band)
@@ -890,6 +899,22 @@ class Text(Widget):
     @bold.setter
     def bold(self, value):
         self.font.setBold(bool(value))
+
+    @property
+    def italic(self):
+        return self.font.italic()
+
+    @italic.setter
+    def italic(self, value):
+        self.font.setItalic(bool(value))
+
+    @property
+    def underline(self):
+        return self.font.underline()
+
+    @underline.setter
+    def underline(self, value):
+        self.font.setUnderline(bool(value))
 
     @property
     def h_align(self):
@@ -941,6 +966,7 @@ class Text(Widget):
     def render(self, prepared_band):
         obj = super().render(prepared_band)
         obj.left = self.x
+        obj.top = self.top
         obj.width = self.width
         obj.height = self.height
         obj.allow_tags = self.allow_tags
@@ -960,7 +986,7 @@ class Text(Widget):
 
     def calc_size(self):
         if self.can_grow or self.can_shrink or self.auto_width:
-            rect = QRect(0, 0, self.width - self.paddingX * 2 - self.border.width * 2, self.height)
+            rect = QRect(0, self.top, self.width - self.paddingX * 2 - self.border.width * 2, self.height)
             fm = QFontMetrics(self.font)
             flags = self._text_flags()
             r = fm.boundingRect(0, 0, rect.width(), 0, flags, self.text)
@@ -1006,7 +1032,6 @@ class Text(Widget):
             old_pen = painter.pen()
             pen = QPen(self.border.color, self.border.width)
             painter.setPen(pen)
-            # painter.drawRect(QRectF(self.left, self.y, self.width, self.height))
             painter.drawLines(self.border.get_lines(self.left, self.y, self.left + self.width, self.y + self.height))
             painter.setPen(old_pen)
 

@@ -1,5 +1,6 @@
 from PySide2.QtGui import QPainter, QPdfWriter, QFont
-from PySide2.QtCore import QMarginsF
+from PySide2.QtCore import QMarginsF, QSizeF
+from reptile.core import mm
 
 
 class Export:
@@ -13,6 +14,9 @@ class Export:
         self.printer = QPdfWriter(filename)
         self.printer.setPageMargins(QMarginsF(0, 0, 0, 0))
         self.printer.setResolution(96)
+        if self.document.pages:
+            page = self.document.pages[0]
+            self.printer.setPageSizeMM(QSizeF(page.width / mm, page.height / mm))
         self.painter = QPainter()
         self.painter.begin(self.printer)
         self._is_first_page = True
