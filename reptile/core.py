@@ -752,6 +752,7 @@ class GroupHeader(HeaderBand):
                     context['odd'] = not self.band.even
                     if self.datasource and self.datasource.name:
                         context[self.datasource.name] = rec
+                        context[self.datasource.alias] = rec
                     self.band.prepare_row(page, context)
                 self.band.end(page, context)
                 self._end(page, self.context)
