@@ -432,6 +432,8 @@ class Band(Widget):
 
     def prepare(self, page, context):
         ctx = context
+        if self.name:
+            ctx[self.name] = self
         if context:
             ctx.update(context)
         for total in self.totals:
@@ -522,8 +524,10 @@ class DataBand(Band):
     max_rows = None
     even_style = None
     even: bool = None
+    counter = 0
 
     def prepare(self, page, ctx):
+        self.counter = self.row_index
         if not self.datasource:
             records = range(self.rows)
         else:
@@ -534,7 +538,7 @@ class DataBand(Band):
             if self.datasource:
                 ctx.update(self.datasource.context)
             else:
-                ctx['row_index'] = self.row_index
+                ctx['row'] = self.row_index
                 self.even = ctx['even'] = bool(self.row_index % 2)
                 ctx['odd'] = not self.even
             ctx['record'] = row
@@ -576,6 +580,7 @@ class DataBand(Band):
             self.footer.prepare(page, context)
 
     def prepare_row(self, page, context):
+        self.counter = context['row']
         prepared = super().prepare(page, context)
         if self.even_style and self.even:
             prepared.fill = self.report.styles[self.even_style].fill
@@ -728,6 +733,10 @@ class GroupHeader(HeaderBand):
         if self.child:
             self.child._end(page, context)
         if self.footer:
+            if self.datasource.name:
+                self.context[self.datasource.name] = self.context['records']
+                if self.datasource.alias:
+                    self.context[self.datasource.alias] = self.context['records']
             self.footer.prepare(page, context)
 
     def prepare_record(self, record, page, context, finish=False):
@@ -1087,6 +1096,10 @@ class Div(Text):
         self.parent.ax += self.width
 
 
+class CalcText(Text):
+    pass
+
+
 REGISTRY = {
     'reporttitle': ReportTitle,
     'groupheader': GroupHeader,
@@ -1095,6 +1108,8 @@ REGISTRY = {
     'query': Query,
     'params': Params,
     'param': Param,
+    'text': Text,
     'div': Div,
+    'calctext': CalcText,
     'summary': ReportSummary,
 }
