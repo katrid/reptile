@@ -679,7 +679,7 @@ class Query(DataSource):
             if self.report.prepared_params:
                 args = [self.report.prepared_params]
             else:
-                args = []
+                args = [{}]
             self._data = list(self.connection.execute(self.sql, *args))
         return self._data
 
