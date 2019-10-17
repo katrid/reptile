@@ -1091,7 +1091,7 @@ class Div(Text):
         if not self.parent.cols:
             self.parent.cols = [int(obj.cols) for obj in self.parent.objects]
             self.parent.col_width = self.parent.width / sum(self.parent.cols)
-        self.width = self.cols * self.parent.col_width
+        self.width = int(self.cols) * self.parent.col_width
         self.left = self.parent.ax
         self.parent.ax += self.width
 
