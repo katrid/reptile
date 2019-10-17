@@ -1089,7 +1089,7 @@ class Div(Text):
 
     def init(self, page):
         if not self.parent.cols:
-            self.parent.cols = [obj.cols for obj in self.parent.objects]
+            self.parent.cols = [int(obj.cols) for obj in self.parent.objects]
             self.parent.col_width = self.parent.width / sum(self.parent.cols)
         self.width = self.cols * self.parent.col_width
         self.left = self.parent.ax
