@@ -1,8 +1,6 @@
 import sys
 import os
 from unittest import TestCase
-import PySide2
-from PySide2.QtWidgets import QApplication
 from reptile import Report, DataBand, DataSource, Text
 from reptile.exports import pdf
 

@@ -6,31 +6,8 @@ import datetime
 import jinja2
 from jinja2 import contextfunction
 from lxml import etree
-from PySide2.QtGui import QPageSize, QPainter, QTextDocument, QPen, QFont, QColor, QFontMetrics
-from PySide2.QtGui import QPixmap
-from PySide2.QtCore import QRectF, Qt, QLine, QSize, QRect
 from .utils import total, avg
-from .style import Style, Border, Fill
-
-
-@contextfunction
-def finalize(ctx, value):
-    if value is None:
-        return ''
-    this = ctx.parent.get('this')
-    if isinstance(value, (float, Decimal)):
-        return locale.format_string(FormatSettings.numeric_format, value, grouping=True)
-    if isinstance(value, datetime.date) and FormatSettings.date_format:
-        return value.strftime(FormatSettings.date_format)
-    if isinstance(value, datetime.datetime) and FormatSettings.datetime_format:
-        return value.strftime(FormatSettings.datetime_format)
-    return value
-
-
-class FormatSettings:
-    numeric_format: str = '%.2f'
-    date_format: str = None
-    datetime_format: str = None
+from .style import Border, Fill
 
 
 TAG_REGISTRY = {}
@@ -77,22 +54,6 @@ class ReportElement:
         pass
 
 
-class ReportEngine:
-    env = None
-
-    @classmethod
-    def create_template_env(cls):
-        if cls.env:
-            return cls.env
-        env = jinja2.Environment(finalize=finalize)
-        env.globals['sum'] = sum
-        env.globals['total'] = total
-        env.globals['avg'] = avg
-        env.globals['count'] = len
-        if cls.env is None:
-            cls.env = env
-        return env
-
 
 class Report(ReportElement):
     env = None
@@ -118,23 +79,11 @@ class Report(ReportElement):
         else:
             self.prepared_params = None
 
-    def from_string(self, s: str):
-        self.read_xml(etree.fromstring(s))
-
-    def load_file(self, filename: str):
-        if filename.endswith('.xml'):
-            with open(filename, 'rb') as f:
-                self.from_string(f.read())
-
     def add_page(self) -> 'Page':
         page = Page(self)
         page.report = self
         self.pages.append(page)
         return page
-
-    @property
-    def preparing(self):
-        return self._preparing
 
     def prepare(self):
         self._preparing = True
@@ -160,61 +109,7 @@ class Report(ReportElement):
         finally:
             self._preparing = False
 
-    def register_datasource(self, datasource):
-        self.datasources[datasource.name] = datasource
 
-
-mm = 3.77953
-cm = 37.7953
-
-
-class Document:
-    """
-    Prepared report document.
-    """
-    def __init__(self, report):
-        self.report: Report = report
-        self.pages: List[PreparedPage] = []
-
-    def add_page(self):
-        page = PreparedPage()
-        self.pages.append(page)
-        return page
-
-
-class PreparedPage:
-    height = 0
-    width = 0
-
-    def __init__(self):
-        self.bands: List[PreparedBand] = []
-
-    def add_band(self):
-        band = PreparedBand()
-        self.bands.append(band)
-        return band
-
-
-class PreparedBand:
-    report = None
-    left = 0
-    top = 0
-    height = 0
-    width = 0
-    context = {}
-    fill = None
-
-    def __init__(self):
-        self.objects: List[Widget] = []
-
-    @property
-    def bottom(self):
-        return self.top + self.height
-
-    def draw(self, painter: QPainter):
-        if self.fill:
-            r = QRectF(self.left, self.top, self.width, self.height)
-            painter.fillRect(r, self.fill.color_1)
 
 
 class ReportObject(ReportElement):
@@ -271,21 +166,11 @@ class Widget(ReportObject):
         return self.top + self.height
 
 
-class Margin:
-    left = 5 * mm
-    top = 5 * mm
-    right = 5 * mm
-    bottom = 5 * mm
 
 
 class Page(ReportObject):
-    _x = _y = _ay = _ax = 0
-    _page_header = None
-    _page_footer = None
     _report_title = None
     bottom = 0
-    title_before_header = True
-    reset_page_number = False
 
     def __init__(self, report=None):
         super().__init__(report)
@@ -594,13 +479,6 @@ class PageFooter(FooterBand):
     pass
 
 
-class Connection(ReportObject):
-    connection_string: str = None
-
-    def execute(self, sql):
-        raise NotImplemented()
-
-
 class Params(ReportElement):
     pass
 
@@ -828,46 +706,6 @@ class GroupFooter(FooterBand):
 class StretchMode(Enum):
     sum = 0
     count = 1
-
-
-class Total:
-    name = None
-    expression = None
-    total_type = 'sum'
-    _band = None
-    _print_on_band = None
-    value = 0
-
-    def __init__(self, report):
-        self.report = report
-        self.report.totals.append(self)
-
-    def compute(self, context):
-        if self.total_type == 'sum':
-            assert self.expression
-            val = eval(self.expression, {}, context)
-            self.value += val
-        else:
-            self.value += 1
-        return self.value
-
-    @property
-    def band(self):
-        return self._band
-
-    @band.setter
-    def band(self, value):
-        self._band = value
-        self._band.totals.append(self)
-
-    @property
-    def print_on_band(self):
-        return self._print_on_band
-
-    @print_on_band.setter
-    def print_on_band(self, value):
-        self._print_on_band = value
-        self._print_on_band.reset_totals.append(self)
 
 
 class Text(Widget):
@@ -1099,17 +937,3 @@ class Div(Text):
 class CalcText(Text):
     pass
 
-
-REGISTRY = {
-    'reporttitle': ReportTitle,
-    'groupheader': GroupHeader,
-    'groupfooter': GroupFooter,
-    'data': Data,
-    'query': Query,
-    'params': Params,
-    'param': Param,
-    'text': Text,
-    'div': Div,
-    'calctext': CalcText,
-    'summary': ReportSummary,
-}

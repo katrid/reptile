@@ -9,12 +9,12 @@ class Grid(ReportElement):
     def __init__(self, parent=None, datasource=None):
         super().__init__(parent)
         self._datasource = datasource
-        self.header: HeaderBand = None
-        self.footer: FooterBand = None
-        self.master: MasterData = None
-        self.group_header: GroupHeader = None
-        self.group_footer: GroupFooter = None
-        self._datasource_name: str = None
+        self.header: Optional[HeaderBand] = None
+        self.footer: Optional[FooterBand] = None
+        self.master: Optional[MasterData] = None
+        self.group_header: Optional[GroupHeader] = None
+        self.group_footer: Optional[GroupFooter] = None
+        self._datasource_name: Optional[str] = None
         self.even_style = None
 
     def init(self, page: Page):

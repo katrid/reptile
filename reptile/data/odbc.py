@@ -1,12 +1,14 @@
-from .core import Connection
+import pyodbc
+
+from .connection import BaseConnection
 
 
-class OdbcConnection(Connection):
+class OdbcConnection(BaseConnection):
     _connection = None
+    param_marker = '?'
 
     @property
     def connection(self):
-        import pyodbc
         if self._connection is None:
             self._connection = pyodbc.connect(self.connection_string)
         return self._connection
