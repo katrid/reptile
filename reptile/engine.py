@@ -113,6 +113,7 @@ class Report:
         # initialize context with datasource
         for ds in self.datasources:
             if ds.name:
+                ds.params.assign(self.variables)
                 ds.open()
                 if ds.data:
                     self._context[ds.name] = ds.data[0]
