@@ -58,5 +58,16 @@ class PreparedText:
     )
 
 
+class PreparedImage:
+    __slots__ = ('picture', 'left', 'top', 'height', 'width')
+
+    def __init__(self):
+        self.picture = None
+        self.left = 0
+        self.top = 0
+        self.height = 0
+        self.width = 0
+
+
 if TYPE_CHECKING:
     from .engine import Report

@@ -3,7 +3,7 @@ from PySide6.QtGui import QPageSize, QTextDocument, QFont, Qt, QPainter, QPixmap
 from PySide6.QtCore import QSize, QRectF, QRect, QLine
 
 from .style import Border, Fill
-from .runtime import PreparedText, PreparedPage, PreparedBand
+from .runtime import PreparedText, PreparedPage, PreparedBand, PreparedImage
 
 
 TAG_REGISTRY = {}
@@ -231,6 +231,14 @@ class TextRenderer:
         if self.border.bottom:
             r.append(QLine(x1, y2, x2, y2))
         return r
+
+
+class ImageRenderer:
+    @classmethod
+    def draw(cls, x, y, self: PreparedImage, painter: QPainter):
+        img = QPixmap()
+        img.loadFromData(self.picture)
+        painter.drawPixmap(x + self.left, y + self.top, self.width, self.height, img)
 
 
 type_map = {

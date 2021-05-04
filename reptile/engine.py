@@ -4,12 +4,13 @@ from itertools import groupby
 from enum import Enum
 from decimal import Decimal
 import datetime
+import re
 import sqlparse
-from jinja2 import Template, Environment
+from jinja2 import Template, Environment, contextfunction
 from jinja2 import contextfunction
 if TYPE_CHECKING:
     from .totals import Total
-from .runtime import PreparedBand, PreparedText, PreparedPage
+from .runtime import PreparedBand, PreparedText, PreparedPage, PreparedImage
 
 from .units import mm
 
@@ -38,7 +39,15 @@ class ReportEngine:
         return env
 
 
-def finalize(val):
+@contextfunction
+def finalize(context, val):
+    this = context.parent.get('this')
+    if val and isinstance(this, Text):
+        if disp := this.display_format:
+            if isinstance(val, (Decimal, float)) and disp.kind == 'Numeric':
+                return f'{{:{disp.format}}}'.format(val)
+            if isinstance(val, (datetime.date, datetime.datetime)) and disp.kind == 'DateTime':
+                return val.strftime(disp.format)
     if val is None:
         return ''
     if isinstance(val, Decimal):
@@ -584,10 +593,19 @@ class ReportElement:
             stream.append(obj)
 
 
+_re_number_fmt = re.compile(r'\.(\d)f')
+
+
 class DisplayFormat:
-    __slots__ = ('format', 'kind')
-    format: str
-    kind: str
+    __slots__ = ('format', 'kind', 'decimal_pos')
+
+    def __init__(self, format: str, kind: str):
+        self.format: str = format
+        self.kind: str = kind
+
+    def update_format(self):
+        if self.kind == 'Numeric':
+            self.decimal_pos = _re_number_fmt.match(self.format)
 
 
 class Font:
@@ -657,7 +675,7 @@ class Text(ReportElement):
 
     def __init__(self, band: Band, text: str = None):
         super().__init__(band)
-        self.display_format = DisplayFormat()
+        self.display_format: DisplayFormat = None
         self.font = Font()
         self.border = Border()
         self.text = text
@@ -676,7 +694,7 @@ class Text(ReportElement):
     @property
     def template(self):
         if self._template is None:
-            self._template = report_env.from_string(self.text)
+            self._template = report_env.from_string(self.text, {'this': self})
         return self._template
 
     def process(self, context) -> PreparedText:
@@ -719,11 +737,16 @@ class Image(ReportElement):
     element_type = 'image'
     filename: str = None
     url: str = None
+    picture: bytes = None
 
-    def to_json(self) -> dict:
-        new_obj = super().to_json()
-        new_obj['url'] = self.url
-        return new_obj
+    def prepare(self, stream: List, context):
+        img = PreparedImage()
+        img.left = self.left
+        img.top = self.top
+        img.height = self.height
+        img.width = self.width
+        img.picture = self.picture
+        stream.append(img)
 
 
 class SubReport(ReportElement):

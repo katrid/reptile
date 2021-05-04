@@ -1,8 +1,8 @@
 from PySide6.QtGui import QPainter, QFont, QGuiApplication
 from PySide6.QtPrintSupport import QPrinter
 from PySide6.QtCore import QMarginsF, QSizeF, QSize
-from reptile.runtime import PreparedBand
-from reptile.qt import BandRenderer, TextRenderer
+from reptile.runtime import PreparedBand, PreparedText, PreparedImage
+from reptile.qt import BandRenderer, TextRenderer, ImageRenderer
 from reptile.units import mm
 
 
@@ -45,5 +45,8 @@ class PDF:
     def exportBand(self, band: PreparedBand):
         BandRenderer.draw(band, self.painter)
         for obj in band.objects:
-            TextRenderer.draw(band.left, band.top, obj, self.painter)
+            if isinstance(obj, PreparedText):
+                TextRenderer.draw(band.left, band.top, obj, self.painter)
+            elif isinstance(obj, PreparedImage):
+                ImageRenderer.draw(band.left, band.top, obj, self.painter)
 
