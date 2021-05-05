@@ -82,8 +82,14 @@ report_env.globals['SUM'] = SUM
 report_env.globals['AVG'] = AVG
 
 
+class ReprintError(Exception):
+    pass
+
+
 class Report:
     title: str = None
+    page_count = 0
+    _pending_objects: List['Text'] = None
 
     def __init__(self):
         self.pages: List['Page'] = []
@@ -110,6 +116,8 @@ class Report:
 
     def prepare(self):
         stream = []
+        self._pending_objects = []
+        self.page_count = 0
         self._context = {
             'page_index': 0,
             'page_count': 0,
@@ -134,6 +142,11 @@ class Report:
         for page in self.pages:
             if not page.subreport:
                 page.prepare(stream)
+
+        for txt, obj in self._pending_objects:
+            self._context['page_count'] = self.page_count
+            obj.text = txt.render(self._context)
+
         return {
             'pages': stream,
         }
@@ -208,7 +221,6 @@ class Page(ReportObject):
 
     def prepare(self, stream: List):
         self._context = self.report._context
-        self._context['page_index'] += 1
         self.stream = stream
         # detect special bands
         for band in self.bands:
@@ -234,7 +246,9 @@ class Page(ReportObject):
         if self._current_page is not None:
             self.end_page(self._current_page, context)
         page = PreparedPage(self.height, self.width, self.margin)
-        page.index = self._context['page_index']
+        self.report.page_count += 1
+        page.index = self.report.page_count
+        self._context['page_index'] = page.index
         page.bands = []
         if self._page_header:
             self._page_header.prepare(page, context)
@@ -699,6 +713,9 @@ class Text(ReportElement):
             self._template = report_env.from_string(self.text, {'this': self})
         return self._template
 
+    def template2(self, text: str):
+        return report_env.from_string(text, {'this': self})
+
     def process(self, context) -> PreparedText:
         new_obj = PreparedText()
         new_obj.height = self.height
@@ -709,6 +726,8 @@ class Text(ReportElement):
         if self.allow_expressions:
             try:
                 new_obj.text = self.template.render(**self.band._context)
+                if '${' in new_obj.text:
+                    self.report._pending_objects.append((self.template2(new_obj.text.replace('${', '{{').replace('}', '}}')), new_obj))
             except:
                 print('Error evaluating expression', self.text)
                 new_obj.text = '<Error>'
