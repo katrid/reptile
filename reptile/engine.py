@@ -110,6 +110,8 @@ class Report:
 
     def prepare(self):
         stream = []
+        report_env.globals['date'] = datetime.date.today()
+        report_env.globals['time'] = datetime.datetime.now().strftime('%H:%M')
         self._context = {
             'page_index': 0,
             'page_count': 0,
