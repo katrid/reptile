@@ -1,6 +1,11 @@
-from PySide2.QtGui import QPainter, QFont, QGuiApplication
-from PySide2.QtPrintSupport import QPrinter
-from PySide2.QtCore import QMarginsF, QSizeF, QSize
+try:
+    from PySide6.QtGui import QPainter, QFont, QGuiApplication
+    from PySide6.QtPrintSupport import QPrinter
+    from PySide6.QtCore import QMarginsF, QSizeF, QSize
+except ModuleNotFoundError:
+    from PyQt5.QtGui import QPainter, QFont, QGuiApplication
+    from PyQt5.QtPrintSupport import QPrinter
+    from PyQt5.QtCore import QMarginsF, QSizeF, QSize
 from reptile.runtime import PreparedBand, PreparedText, PreparedImage
 from reptile.qt import BandRenderer, TextRenderer, ImageRenderer
 from reptile.units import mm
@@ -13,7 +18,7 @@ class QReportEngine:
 class PDF:
     def __init__(self, document):
         if not QReportEngine.app:
-            QReportEngine.app = QGuiApplication([])
+            QReportEngine.app = QGuiApplication(['-display', 'QVFb:2'])
         self.document = document
         self.printer = None
         self.painter = None
