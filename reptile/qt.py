@@ -4,8 +4,7 @@ try:
     from PySide6.QtCore import QSize, QRectF, QRect, QLine
 except ModuleNotFoundError:
     from PyQt5.QtGui import QPageSize, QTextDocument, QFont, QPainter, QPixmap, QFontMetrics, QPen, QColor
-    from PyQt5.QtCore import QSize, QRectF, QRect, QLine
-    from PyQt5 import Qt
+    from PyQt5.QtCore import QSize, QRectF, QRect, QLine, Qt
 
 from .style import Border, Fill
 from .runtime import PreparedText, PreparedPage, PreparedBand, PreparedImage
