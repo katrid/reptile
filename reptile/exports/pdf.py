@@ -18,7 +18,7 @@ class QReportEngine:
 class PDF:
     def __init__(self, document):
         if not QReportEngine.app:
-            QReportEngine.app = QGuiApplication(['-display', 'QVFb:2'])
+            QReportEngine.app = QGuiApplication([])
         self.document = document
         self.printer = None
         self.painter = None
