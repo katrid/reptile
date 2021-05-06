@@ -27,7 +27,7 @@ class PDF:
     def export(self, filename):
         self.printer = QPrinter()
         self.printer.setOutputFileName(filename)
-        self.printer.setPageMargins(QMarginsF(0.0, 0.0, 0.0, 0.0))
+        # self.printer.setPageMargins(0.0, 0.0, 0.0, 0.0, qun)
         self.printer.setResolution(72)
         pages = self.document['pages']
         if pages:
