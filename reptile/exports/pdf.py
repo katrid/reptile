@@ -1,6 +1,6 @@
-from PySide6.QtGui import QPainter, QFont, QGuiApplication
-from PySide6.QtPrintSupport import QPrinter
-from PySide6.QtCore import QMarginsF, QSizeF, QSize
+from PySide2.QtGui import QPainter, QFont, QGuiApplication
+from PySide2.QtPrintSupport import QPrinter
+from PySide2.QtCore import QMarginsF, QSizeF, QSize
 from reptile.runtime import PreparedBand, PreparedText, PreparedImage
 from reptile.qt import BandRenderer, TextRenderer, ImageRenderer
 from reptile.units import mm
