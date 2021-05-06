@@ -1,6 +1,10 @@
 from typing import List, Optional
-from PySide6.QtGui import QPageSize, QTextDocument, QFont, Qt, QPainter, QPixmap, QFontMetrics, QPen, QColor
-from PySide6.QtCore import QSize, QRectF, QRect, QLine
+try:
+    from PySide6.QtGui import QPageSize, QTextDocument, QFont, Qt, QPainter, QPixmap, QFontMetrics, QPen, QColor
+    from PySide6.QtCore import QSize, QRectF, QRect, QLine
+except ModuleNotFoundError:
+    from PyQt5.QtGui import QPageSize, QTextDocument, QFont, Qt, QPainter, QPixmap, QFontMetrics, QPen, QColor
+    from PyQt5.QtCore import QSize, QRectF, QRect, QLine
 
 from .style import Border, Fill
 from .runtime import PreparedText, PreparedPage, PreparedBand, PreparedImage
