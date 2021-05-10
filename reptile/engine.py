@@ -238,7 +238,7 @@ class Page(ReportObject):
 
         for band in self.bands:
             # Only root bands must be prepared
-            if band.parent is None and isinstance(band, (GroupHeader, DataBand)):
+            if band.parent is None and isinstance(band, (GroupHeader, DataBand, Footer)):
                 page = band.prepare(page, self._context) or page
 
         self.end_page(page, self._context)
@@ -473,7 +473,7 @@ class DataBand(Band):
             context['odd'] = not even
             page = super().prepare(page, context)
         # print the footer band
-        if self.footer:
+        if self.footer and not self.group_header:
             page = self.footer.prepare(page, context)
         return page
 
@@ -576,6 +576,7 @@ class GroupHeader(Band):
                     page = child.process(lst, page, context)
                 else:
                     page = child.prepare(page, context)
+
         self.page.remove_new_page_callback(self.on_new_page)
         return page
 
