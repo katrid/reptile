@@ -1,13 +1,9 @@
 from typing import List, Optional
-try:
-    from PySide6.QtGui import QPageSize, QTextDocument, QFont, Qt, QPainter, QPixmap, QFontMetrics, QPen, QColor
-    from PySide6.QtCore import QSize, QRectF, QRect, QLine
-except ModuleNotFoundError:
-    from PyQt5.QtGui import QPageSize, QTextDocument, QFont, QPainter, QPixmap, QFontMetrics, QPen, QColor
-    from PyQt5.QtCore import QSize, QRectF, QRect, QLine, Qt
+from PySide2.QtGui import QPageSize, QTextDocument, QFont, Qt, QPainter, QPixmap, QFontMetrics, QPen, QColor
+from PySide2.QtCore import QSize, QRectF, QRect, QLine, QPoint
 
 from .style import Border, Fill
-from .runtime import PreparedText, PreparedPage, PreparedBand, PreparedImage
+from .runtime import PreparedText, PreparedPage, PreparedBand, PreparedImage, PreparedLine
 
 
 TAG_REGISTRY = {}
@@ -194,19 +190,13 @@ class TextRenderer:
             painter.setBrush(brush_style_map[brushStyle])
             painter.fillRect(rect, QColor('#' + hex(self.backColor)[2:]))
         if self.allowTags:
-            doc = self._doc
-            doc.setTextWidth(self.width)
-            opt = doc.defaultTextOption()
-            if self.hAlign:
-                opt.setAlignment(self.hAlign)
-            doc.setDefaultTextOption(opt)
+            doc = QTextDocument()
+            doc.setDefaultFont(font)
             doc.setHtml(self.text)
             doc.setDocumentMargin(0)
             painter.save()
-            painter.translate(0, ty)
-            ty = self.top + self.border.width * 2
-            doc.setDefaultFont(font)
-            doc.drawContents(painter, QRectF(x, y, w, h))
+            painter.translate(tx + 2, ty + 1)
+            doc.drawContents(painter, QRectF(0, 0, self.width, self.height))
             painter.restore()
         else:
             painter.save()
@@ -218,7 +208,7 @@ class TextRenderer:
             painter.restore()
         if self.border and self.border.color is not None:
             old_pen = painter.pen()
-            pen = QPen(QColor(self.border.color), self.border.width)
+            pen = QPen(QColor(self.border.color), self.border.width, pen_style_map.get(self.border.style, Qt.PenStyle.SolidLine))
             painter.setPen(pen)
             painter.drawLines(cls.getLines(self, self.left + x, self.top + y, self.left + self.width + x, self.top + y + self.height))
             painter.setPen(old_pen)
@@ -242,7 +232,24 @@ class ImageRenderer:
     def draw(cls, x, y, self: PreparedImage, painter: QPainter):
         img = QPixmap()
         img.loadFromData(self.picture)
-        painter.drawPixmap(x + self.left, y + self.top, self.width, self.height, img)
+        painter.drawPixmap(
+            x + self.left, y + self.top,
+            img.scaled(self.width, self.height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        )
+
+
+class LineRenderer:
+    @classmethod
+    def draw(cls, x, y, self: PreparedLine, painter: QPainter):
+        old_pen = painter.pen()
+        pen = QPen(QColor(0))
+        pen.setWidth(self.size)
+        pen.setStyle(Qt.PenStyle.SolidLine)
+        painter.setPen(pen)
+        tx = self.left + x
+        ty = self.top + y
+        painter.drawLine(QLine(tx, ty, tx + self.width, ty + self.height))
+        painter.setPen(old_pen)
 
 
 type_map = {
@@ -252,4 +259,10 @@ type_map = {
 brush_style_map = {
     0: Qt.BrushStyle.NoBrush,
     1: Qt.BrushStyle.SolidPattern,
+}
+
+pen_style_map = {
+    0: Qt.PenStyle.NoPen,
+    1: Qt.PenStyle.SolidLine,
+    2: Qt.PenStyle.DotLine,
 }

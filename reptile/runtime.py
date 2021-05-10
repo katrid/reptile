@@ -69,5 +69,16 @@ class PreparedImage:
         self.width = 0
 
 
+class PreparedLine:
+    __slots__ = ('left', 'top', 'height', 'width', 'size')
+
+    def __init__(self):
+        self.left = 0
+        self.top = 0
+        self.height = 0
+        self.width = 0
+        self.size = 0
+
+
 if TYPE_CHECKING:
     from .engine import Report

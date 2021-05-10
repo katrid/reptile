@@ -640,6 +640,7 @@ class Border:
     bottom: bool = False
     width = 1
     color: int = None
+    style: int = None
 
 
 class RecordHelper:
@@ -768,6 +769,24 @@ class Image(ReportElement):
         img.width = self.width
         img.picture = self.picture
         stream.append(img)
+
+
+class Line(ReportElement):
+    size = 0
+
+    def __init__(self, band):
+        super().__init__(band)
+        self.border = Border()
+
+    def prepare(self, stream: List, context):
+        from .runtime import PreparedLine
+        line = PreparedLine()
+        line.left = self.left
+        line.top = self.top
+        line.width = self.width
+        line.height = self.height
+        line.size = self.size
+        stream.append(line)
 
 
 class SubReport(ReportElement):
