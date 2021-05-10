@@ -70,6 +70,7 @@ def COUNT(obj):
 
 
 def SUM(expr, band=None, flag=None):
+    print('sum', expr, band)
     return sum(expr)
 
 
@@ -308,6 +309,17 @@ class DataSource(ReportObject):
             value.datasources.append(self)
 
 
+class DataProxy:
+    def __init__(self, data: Iterable):
+        self.data = data
+
+    def __getattr__(self, item):
+        return [rec[item] if isinstance(rec, dict) else getattr(rec, item) for rec in self.data]
+
+    def __iter__(self):
+        return iter(self.data)
+
+
 class Band(ReportObject):
     bg_color: int = None
     height: int = None
@@ -505,6 +517,7 @@ class GroupHeader(Band):
     expression: str = None
     band: DataBand = None
     field: str = None
+    footer: 'GroupFooter' = None
     _datasource: DataSource = None
     _template_expression: Template = None
 
@@ -546,6 +559,7 @@ class GroupHeader(Band):
         self.page.add_new_page_callback(self.on_new_page)
         groups = groupby(data, key=partial(self.eval_condition, context=context))
         for i, (grouper, lst) in enumerate(groups):
+            lst = DataProxy(list(lst))
             group = Group(grouper, lst, i)
             context['group'] = group
             page = super().prepare(page, context)
@@ -555,7 +569,7 @@ class GroupHeader(Band):
 
             for child in self.children:
                 if datasource_name:
-                    context[datasource.name] = datasource
+                    context[datasource.name] = lst
                 if isinstance(child, DataBand):
                     page = child.process(lst, page, context)
                 elif isinstance(child, GroupHeader):
