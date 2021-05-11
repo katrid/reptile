@@ -70,11 +70,11 @@ def COUNT(obj):
 
 
 def SUM(expr, band=None, flag=None):
-    print('sum', expr, band)
     return sum(expr)
 
 
 def AVG(expr, band=None, flag=None):
+    print('AVG', expr)
     return sum(expr) / len(expr)
 
 
@@ -314,7 +314,11 @@ class DataProxy:
         self.data = data
 
     def __getattr__(self, item):
-        return [rec[item] if isinstance(rec, dict) else getattr(rec, item) for rec in self.data]
+        if self.data and isinstance(self.data, list):
+            return self.data[0][item]
+
+    def values(self, item):
+        return [rec[item] or Decimal(0.00) if isinstance(rec, dict) else getattr(rec, item) for rec in self.data]
 
     def __iter__(self):
         return iter(self.data)
@@ -562,10 +566,10 @@ class GroupHeader(Band):
             lst = DataProxy(list(lst))
             group = Group(grouper, lst, i)
             context['group'] = group
-            page = super().prepare(page, context)
-
             datasource = self.datasource
             datasource_name = datasource and datasource.name
+            context[datasource_name] = lst
+            page = super().prepare(page, context)
 
             for child in self.children:
                 if datasource_name:
