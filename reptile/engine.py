@@ -74,7 +74,6 @@ def SUM(expr, band=None, flag=None):
 
 
 def AVG(expr, band=None, flag=None):
-    print('AVG', expr)
     return sum(expr) / len(expr)
 
 

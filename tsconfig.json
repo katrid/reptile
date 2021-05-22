@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "removeComments": true,
+    "preserveConstEnums": true,
+    "sourceMap": true,
+    "target" : "ES2020",
+    "watch": true,
+    "alwaysStrict": true,
+    "traceResolution": true,
+    "declaration": true,
+    "declarationMap": true,
+    "experimentalDecorators": true,
+    "composite": true,
+    "module": "AMD",
+    "moduleResolution": "Node",
+    "outFile": "dist/reptile.js"
+  },
+  "include": ["src"],
+}
