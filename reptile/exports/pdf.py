@@ -8,7 +8,7 @@ from reptile.units import mm
 
 
 class QReportEngine:
-    app = QApplication([])
+    app = QApplication(['--platform', 'offscreen'])
 
 
 class PDF:
