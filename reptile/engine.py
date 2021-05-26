@@ -791,6 +791,8 @@ class Image(ReportElement):
     filename: str = None
     url: str = None
     picture: bytes = None
+    _datasource: DataSource = None
+    field: str = None
 
     def prepare(self, stream: List, context):
         img = PreparedImage()
@@ -798,8 +800,21 @@ class Image(ReportElement):
         img.top = self.top
         img.height = self.height
         img.width = self.width
-        img.picture = self.picture
+        if self.field:
+            img.picture = context[self.datasource.name][self.field]
+        else:
+            img.picture = self.picture
         stream.append(img)
+
+    @property
+    def datasource(self):
+        return self._datasource
+
+    @datasource.setter
+    def datasource(self, value):
+        if isinstance(value, str):
+            value = self.report.get_datasource(value)
+        self._datasource = value
 
 
 class Line(ReportElement):
