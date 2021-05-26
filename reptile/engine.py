@@ -453,6 +453,7 @@ class DataBand(Band):
     band_type = 'data'
     _datasource: DataSource = None
     row_count: int = None
+    header: 'HeaderBand' = None
     footer: 'Footer' = None
     group_header: 'GroupHeader' = None
 
@@ -464,6 +465,11 @@ class DataBand(Band):
 
     def process(self, data: Iterable, page: PreparedPage, context: dict):
         context.setdefault('line', 1)
+
+        # print the header band
+        if self.header and not self.group_header:
+            page = self.header.prepare(page, context)
+
         self._context = context
         for i, row in enumerate(data):
             row = RecordHelper(row)
