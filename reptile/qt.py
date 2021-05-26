@@ -137,18 +137,20 @@ class TextRenderer:
     def move_to(self, x, y):
         self.y = y
 
-    def calc_size(self):
-        if self.can_grow or self.can_shrink or self.auto_width:
-            rect = QRect(0, self.top, self.width - self.paddingX * 2 - self.border.width * 2, self.height)
-            fm = QFontMetrics(self.font)
-            flags = self._text_flags()
-            r = fm.boundingRect(0, 0, rect.width(), 0, flags, self.text)
-            if (self.can_shrink and self.height > r.height()) or (self.can_grow and self.height < r.height()):
-                rect.setHeight(r.height())
-            if self.auto_width:
-                rect.setWidth(r.width() + self.border.width * 2)
-            return QSize(rect.width() + self.paddingX * 2 + self.border.width * 2, rect.height() + self.border.width * 2)
-        return QSize(self.width, self.height)
+    @classmethod
+    def calc_size(cls, self):
+        font = QFont(self.fontName)
+        if self.fontSize:
+            font.setPointSizeF(self.fontSize)
+        if self.fontBold:
+            font.setBold(True)
+        if self.fontItalic:
+            font.setItalic(True)
+        fm = QFontMetrics(font)
+        flags = cls.textFlags(self)
+        r = fm.boundingRect(0, 0, self.width, 0, flags, self.text)
+        self.height = r.height() + 4
+        return self.width, self.height
 
     @property
     def word_wrap(self) -> bool:

@@ -237,7 +237,7 @@ class Page(ReportObject):
 
         for band in self.bands:
             # Only root bands must be prepared
-            if band.parent is None and isinstance(band, (GroupHeader, DataBand, Footer)):
+            if band.parent is None and isinstance(band, (GroupHeader, DataBand)):
                 page = band.prepare(page, self._context) or page
 
         self.end_page(page, self._context)
@@ -371,9 +371,11 @@ class Band(ReportObject):
         band.left = page.x
         band.top = page.y
         for obj in self.objects:
-            obj.prepare(objs, context)
+            new_obj = obj.prepare(objs, context)
+            if new_obj and (new_obj.height + new_obj.top) > band.height:
+                band.height = new_obj.height + new_obj.top
         band.bottom = band.top + band.height
-        if band.bottom > page.ay:
+        if int(band.bottom) > int(page.ay):
             page = self.page.new_page(context)
             band.setPage(page)
         page.bands.append(band)
@@ -625,6 +627,7 @@ class ReportElement:
         obj = self.process(context)
         if obj is not None:
             stream.append(obj)
+        return obj
 
 
 _re_number_fmt = re.compile(r'\.(\d)f')
@@ -736,6 +739,7 @@ class Text(ReportElement):
         return report_env.from_string(text, {'this': self})
 
     def process(self, context) -> PreparedText:
+        from .qt import TextRenderer
         new_obj = PreparedText()
         new_obj.height = self.height
         new_obj.width = self.width
@@ -766,6 +770,9 @@ class Text(ReportElement):
         new_obj.hAlign = self.h_align
         new_obj.border = self.border
         new_obj.wordWrap = self.word_wrap
+        if self.can_grow:
+            new_obj.canGrow = True
+            size = TextRenderer.calc_size(new_obj)
         return new_obj
 
 
@@ -839,6 +846,59 @@ class SubReport(ReportElement):
         finally:
             cur_page.x = self._x
             cur_page.y = self._y
+
+
+class TableColumn:
+    def __init__(self, table):
+        self.table = table
+        self.name = None
+        self.width = 0
+
+
+class TableCell(Text):
+    def __init__(self, band):
+        super().__init__(band)
+
+
+class TableRow:
+    def __init__(self, table):
+        self.table = table
+        self.name = None
+        self.height = 0
+        self.cells = []
+
+    def add_cell(self, cell):
+        self.cells.append(cell)
+
+
+class Table(ReportElement):
+    def __init__(self, band):
+        super().__init__(band)
+        self.columns = []
+        self.rows = []
+
+    def prepare(self, stream: List, context):
+        y = self.top
+        h = 0
+        row_count = len(self.rows)
+        col_count = len(self.columns)
+        for ay, row in enumerate(self.rows):
+            x = self.left
+            for ax, cell in enumerate(row.cells):
+                cell.top = y
+                cell.left = x
+                cell.height += 4
+                cell.prepare(stream, context)
+                x = cell.left + cell.width
+            h += row.height + 4
+            y = self.top + h
+        self.height = y
+
+    def add_column(self, column):
+        self.columns.append(column)
+
+    def add_row(self, row):
+        self.rows.append(row)
 
 
 REGISTRY = {
