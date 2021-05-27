@@ -569,12 +569,13 @@ class GroupHeader(Band):
     def process(self, data: Iterable, page: PreparedPage, context):
         self.page.add_new_page_callback(self.on_new_page)
         groups = groupby(data, key=partial(self.eval_condition, context=context))
+        databand = None
+        datasource = self.datasource
+        datasource_name = datasource and datasource.name
         for i, (grouper, lst) in enumerate(groups):
             lst = DataProxy(list(lst))
             group = Group(grouper, lst, i)
             context['group'] = group
-            datasource = self.datasource
-            datasource_name = datasource and datasource.name
             context[datasource_name] = lst
             page = super().prepare(page, context)
 
@@ -583,10 +584,16 @@ class GroupHeader(Band):
                     context[datasource.name] = lst
                 if isinstance(child, DataBand):
                     page = child.process(lst, page, context)
+                    databand = child
                 elif isinstance(child, GroupHeader):
                     page = child.process(lst, page, context)
                 else:
                     page = child.prepare(page, context)
+
+        context[datasource_name] = DataProxy(datasource.data)
+
+        if not self.parent and databand and databand.footer:
+            databand.footer.prepare(page, context)
 
         self.page.remove_new_page_callback(self.on_new_page)
         return page
