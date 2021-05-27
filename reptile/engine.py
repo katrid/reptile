@@ -684,6 +684,9 @@ class RecordHelper:
     def __getattr__(self, item):
         return self._rec[item]
 
+    def __getitem__(self, item):
+        return self._rec[item]
+
 
 class BrushStyle(Enum):
     NONE = 0
