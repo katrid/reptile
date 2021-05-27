@@ -540,7 +540,11 @@ class GroupHeader(Band):
             assert self.expression
             if '"' in self.expression:
                 self.expression = self.expression.replace('"', '')
-            self._template_expression = report_env.from_string('{{ %s }}' % self.expression)
+            try:
+                self._template_expression = report_env.from_string('{{ %s }}' % self.expression)
+            except:
+                print('Error preparing expression for', self.name)
+                raise
         return self._template_expression
 
     def eval_condition(self, row, context: dict):
