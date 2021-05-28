@@ -359,7 +359,7 @@ class Band(ReportObject):
         page = self.prepare_objects(page, context)
         if self.subreports:
             self.prepare_subreports(page, context)
-        return self.page._current_page
+        return page
 
     def prepare_objects(self, page: PreparedPage, context):
         context = self._context = context or self.page._context
@@ -564,11 +564,11 @@ class GroupHeader(Band):
         super().prepare(page, context)
 
     def prepare(self, page: PreparedPage, context):
-        self._context = self.page._context
+        self._context = context
         datasource = self.datasource
         datasource.open()
         data = datasource.data
-        return self.process(data, page, self.page._context)
+        return self.process(data, page, context)
 
     def process(self, data: Iterable, page: PreparedPage, context):
         self.page.add_new_page_callback(self.on_new_page)
@@ -876,7 +876,9 @@ class SubReport(ReportElement):
             page.x = self.left + self._x
             page.y = self.top + self._y
             for band in self.bands:
-                if isinstance(band, (GroupHeader, DataBand)):
+                if isinstance(band, GroupHeader):
+                    page = band.prepare(page, context) or page
+                elif isinstance(band, DataBand) and band.group_header is None:
                     page = band.prepare(page, context) or page
         finally:
             cur_page.x = self._x
