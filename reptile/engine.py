@@ -248,7 +248,7 @@ class Page(ReportObject):
         page = PreparedPage(self.height, self.width, self.margin)
         self.report.page_count += 1
         page.index = self.report.page_count
-        self._context['page_index'] = page.index
+        context['page_index'] = page.index
         page.bands = []
         if self._page_header:
             self._page_header.prepare(page, context)
