@@ -115,7 +115,7 @@ class Report:
         return Page(self)
 
     def prepare(self):
-        stream = []
+        self.stream = stream = []
         self._pending_objects = []
         self.page_count = 0
         self._context = {
@@ -255,7 +255,7 @@ class Page(ReportObject):
         if self._page_footer:
             page.ay -= self._page_footer.height
         self._current_page = page
-        self.stream.append(page)
+        self.report.stream.append(page)
         for cb in self.callbacks:
             cb(page, context)
         return page
