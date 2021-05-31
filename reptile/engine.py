@@ -771,8 +771,9 @@ class Text(ReportElement):
                 new_obj.text = self.template.render(**self.band._context)
                 if '${' in new_obj.text:
                     self.report._pending_objects.append((self.template2(new_obj.text.replace('${', '{{').replace('}', '}}')), new_obj))
-            except:
+            except Exception as e:
                 print('Error evaluating expression', self.text)
+                print(e)
                 new_obj.text = '<Error>'
         else:
             new_obj.text = self.text
