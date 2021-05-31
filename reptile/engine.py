@@ -483,7 +483,7 @@ class DataBand(Band):
             even = context['even'] = bool(i % 2)
             context['odd'] = not even
             page = super().prepare(page, context)
-        context[self.datasource.name] = self.datasource
+        context[self.datasource.name] = DataProxy(self.datasource.data)
         # print the footer band
         if self.footer and not self.group_header:
             page = self.footer.prepare(page, context)
