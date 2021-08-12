@@ -6,7 +6,7 @@ from decimal import Decimal
 import datetime
 import re
 import sqlparse
-from jinja2 import Template, Environment, contextfunction
+from jinja2 import Template, Environment, pass_context
 from jinja2 import contextfunction
 if TYPE_CHECKING:
     from .totals import Total
@@ -39,7 +39,7 @@ class ReportEngine:
         return env
 
 
-@contextfunction
+@pass_context
 def finalize(context, val):
     this = context.parent.get('this')
     if val and isinstance(this, Text):
@@ -77,9 +77,31 @@ def AVG(expr, band=None, flag=None):
     return sum(expr) / len(expr)
 
 
+def avg(values):
+    return sum(values) / len(values)
+
+
+@pass_context
+def total(context, op, field=None):
+    if isinstance(op, str) and field is None:
+        field = op
+        op = sum
+    records = context.parent['records']
+    if records:
+        rec = records[0]
+        if isinstance(rec, dict):
+            fn = lambda rec: rec[field] or 0
+        else:
+            fn = lambda rec: getattr(rec, field) or 0
+        return op(list(map(fn, records)))
+    return 0
+
+
 report_env.globals['COUNT'] = COUNT
 report_env.globals['SUM'] = SUM
 report_env.globals['AVG'] = AVG
+report_env.globals['avg'] = avg
+report_env.globals['total'] = total
 
 
 class ReprintError(Exception):
@@ -939,16 +961,3 @@ class Table(ReportElement):
     def add_row(self, row):
         self.rows.append(row)
 
-
-REGISTRY = {
-    'reporttitle': ReportTitle,
-    'groupheader': GroupHeader,
-    'groupfooter': GroupFooter,
-    # 'data': Data,
-    # 'params': Params,
-    # 'param': Param,
-    'text': Text,
-    # 'div': Div,
-    # 'calctext': CalcText,
-    'summary': ReportSummary,
-}

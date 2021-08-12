@@ -8,4 +8,5 @@ class BaseConnection(ReportObject):
     def execute(self, sql):
         raise NotImplemented()
 
-
+    def cursor(self):
+        raise NotImplemented()
