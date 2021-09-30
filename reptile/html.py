@@ -166,7 +166,7 @@ class Grid(HtmlWidget):
                 group.render(self.datasource.data, rows, context)
         else:
             self.render_header(table, context)
-            for rec in self.datasource.data:
+            for rec in self.datasource:
                 context['record'] = rec
                 rows.append(h('tr', *[col.render(context) for col in self.columns]))
 
