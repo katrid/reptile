@@ -619,10 +619,10 @@ class GroupHeader(Band):
 
         context[datasource_name] = DataProxy(datasource.data)
 
-        if not self.parent and databand and databand.footer:
-            databand.footer.prepare(page, context)
-
         self.page.remove_new_page_callback(self.on_new_page)
+        if not self.parent and databand and databand.footer:
+            page = databand.footer.prepare(page, context)
+
         return page
 
 
