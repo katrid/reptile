@@ -796,6 +796,8 @@ class Text(ReportElement):
                 new_obj.text = self.template.render(**self.band._context)
                 if '${' in new_obj.text:
                     self.report._pending_objects.append((self.template2(new_obj.text.replace('${', '{{').replace('}', '}}')), new_obj))
+            except ZeroDivisionError as e:
+                new_obj.text = '-'
             except Exception as e:
                 print('Error evaluating expression', self.text)
                 print(e)
