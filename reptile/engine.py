@@ -556,7 +556,7 @@ class GroupHeader(Band):
     _template_expression: Template = None
 
     @property
-     def template_expression(self):
+    def template_expression(self):
         if not self._template_expression:
             if not self.expression and self.field:
                 self.expression = 'record.' + self.field
