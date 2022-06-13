@@ -156,10 +156,7 @@ class Report:
             if ds.name:
                 ds.params.assign(self.variables)
                 ds.open()
-                if ds.data:
-                    self._context[ds.name] = ds.data[0]
-                else:
-                    self._context[ds.name] = ds.data
+                self._context[ds.name] = DataProxy(ds.data)
 
         for page in self.pages:
             if not page.subreport:
