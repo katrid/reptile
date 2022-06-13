@@ -320,6 +320,8 @@ class DataSource(ReportObject):
 
     @property
     def data(self) -> Iterable:
+        if not self._opened:
+            self.open()
         return self._data
 
     def set_report(self, value: Report):
@@ -797,7 +799,6 @@ class Text(ReportElement):
             except Exception as e:
                 print('Error evaluating expression', self.text)
                 print(e)
-                raise
                 new_obj.text = '<Error>'
         else:
             new_obj.text = self.text
