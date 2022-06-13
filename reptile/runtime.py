@@ -54,7 +54,7 @@ class PreparedBand:
 class PreparedText:
     __slots__ = (
         'left', 'top', 'height', 'width', 'allowTags', 'text', 'fontName', 'fontSize', 'fontBold', 'fontItalic',
-        'backColor', 'brushStyle', 'vAlign', 'hAlign', 'border', 'wordWrap', 'canGrow',
+        'backColor', 'brushStyle', 'vAlign', 'hAlign', 'border', 'wordWrap', 'canGrow', 'error',
     )
 
 
