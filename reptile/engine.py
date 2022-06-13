@@ -556,7 +556,7 @@ class GroupHeader(Band):
     _template_expression: Template = None
 
     @property
-    def template_expression(self):
+     def template_expression(self):
         if not self._template_expression:
             if not self.expression and self.field:
                 self.expression = 'record.' + self.field
@@ -797,6 +797,7 @@ class Text(ReportElement):
             except Exception as e:
                 print('Error evaluating expression', self.text)
                 print(e)
+                raise
                 new_obj.text = '<Error>'
         else:
             new_obj.text = self.text
