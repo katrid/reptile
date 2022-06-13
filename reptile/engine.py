@@ -7,7 +7,6 @@ import datetime
 import re
 import sqlparse
 from jinja2 import Template, Environment, pass_context
-from jinja2 import contextfunction
 if TYPE_CHECKING:
     from .totals import Total
 from .runtime import PreparedBand, PreparedText, PreparedPage, PreparedImage
