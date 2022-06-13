@@ -344,6 +344,9 @@ class DataProxy:
 
     def __iter__(self):
         return iter(self.data)
+    
+    def __getitem__(self, item):
+        return self.data[0][item]
 
 
 class Band(ReportObject):
