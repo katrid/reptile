@@ -1,6 +1,7 @@
 from itertools import groupby
 from functools import partial
 from collections import defaultdict
+import jinja2
 
 from .engine import report_env, Group
 
@@ -113,13 +114,19 @@ class Grid(HtmlWidget):
     def report(self):
         return self.page.report
 
+    def get_sql(self) -> str:
+        if '!--' in self.sql:
+            return jinja2.Template(self.sql, '--', '!--').render(self.report.params)
+        return self.sql
+
     @property
     def datasource(self):
         if self._datasource is None and self.sql:
+            # check by macros
             if self.report.connection:
-                self._datasource = self.report.connection.create_datasource(None, self.sql)
+                self._datasource = self.report.connection.create_datasource(None, self.get_sql())
             else:
-                self._datasource = report_env.create_datasource(self.sql)
+                self._datasource = report_env.create_datasource(self.get_sql())
                 self._datasource.params.assign(self.report.params)
             self._datasource.open()
         return self._datasource
