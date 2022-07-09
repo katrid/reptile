@@ -1,6 +1,6 @@
 from typing import List, Optional
-from PySide2.QtGui import QPageSize, QTextDocument, QFont, Qt, QPainter, QPixmap, QFontMetrics, QPen, QColor
-from PySide2.QtCore import QSize, QRectF, QRect, QLine, QPoint
+from PySide6.QtGui import QPageSize, QTextDocument, QFont, Qt, QPainter, QPixmap, QFontMetrics, QPen, QColor
+from PySide6.QtCore import QSize, QRectF, QRect, QLine, QPoint
 
 from .style import Border, Fill
 from .runtime import PreparedText, PreparedPage, PreparedBand, PreparedImage, PreparedLine
@@ -126,7 +126,7 @@ class TextRenderer:
         if info.fontBold:
             self.font.setBold(info.fontBold)
         if info.fontItalic:
-            self.font.setItalic(info.fontItalic)
+            self.font.setItalic(info.fontItalic) 
         self.font.setPointSize(info.fontSize)
         self.v_align = v_align_map.get(info.vAlign)
         self.h_align = h_align_map.get(info.hAlign)

@@ -1,23 +1,25 @@
+from pathlib import Path
 from typing import List, Optional, Iterable, TYPE_CHECKING
 from functools import partial
 from itertools import groupby
 from enum import Enum
 from decimal import Decimal
 import datetime
+from collections import defaultdict
 import re
 import sqlparse
 from jinja2 import Template, Environment, pass_context
 if TYPE_CHECKING:
     from .totals import Total
-from .runtime import PreparedBand, PreparedText, PreparedPage, PreparedImage
+from .runtime import PreparedBand, PreparedText, PreparedPage, PreparedImage, Document
 
 from .units import mm
 
 
 class FormatSettings:
-    numeric_format: str = '%.2f'
-    date_format: str = None
-    datetime_format: str = None
+    numeric: str = '%.2f'
+    date: str = None
+    datetime: str = None
 
         
 ERROR_TEXT = '-'
@@ -115,15 +117,29 @@ class Report:
     page_count = 0
     _pending_objects: List['Text'] = None
 
-    def __init__(self):
+    def __init__(self, file: str | Path | dict = None, default_connection=None):
         self.pages: List['Page'] = []
         self.datasources: List['DataSource'] = []
         self.totals: List[Total] = []
         self.variables = {}
         self.objects = []
         # default database connection
-        self.connection = None
+        self.connection = default_connection
         self._context = None
+        if isinstance(file, dict):
+            self.load(file)
+
+    def load(self, structure: dict):
+        rep = structure['report']
+        for ds in rep['dataSources']:
+            if 'sql' in ds:
+                datasource = self.connection.create_query(name=ds.get('name'), sql=ds['sql'])
+            else:
+                datasource = DataSource(ds.get('name'), data=ds['data'])
+            self.register_datasource(datasource)
+        for p in rep['pages']:
+            page = self.new_page()
+            page.load(p)
 
     def __getitem__(self, item):
         for page in self.pages:
@@ -138,7 +154,7 @@ class Report:
     def new_page(self) -> 'Page':
         return Page(self)
 
-    def prepare(self):
+    def prepare(self) -> Document:
         self.stream = stream = []
         self._pending_objects = []
         self.page_count = 0
@@ -168,9 +184,9 @@ class Report:
             self._context['page_count'] = self.page_count
             obj.text = txt.render(self._context)
 
-        return {
-            'pages': stream,
-        }
+        doc = Document(self)
+        doc.pages = stream
+        return doc
 
     def get_datasource(self, name):
         for ds in self.datasources:
@@ -186,7 +202,8 @@ class Report:
                 self.from_string(f.read())
 
     def register_datasource(self, datasource):
-        self.datasources[datasource.name] = datasource
+        self.datasources.append(datasource)
+        self.objects.append(datasource)
 
 
 class ReportObject:
@@ -208,11 +225,11 @@ class ReportObject:
 class Margin:
     __slots__ = ('left', 'top', 'right', 'bottom')
 
-    def __init__(self):
-        self.left = 5 * mm
-        self.top = 5 * mm
-        self.right = 5 * mm
-        self.bottom = 5 * mm
+    def __init__(self, left=5, top=5, right=5, bottom=5):
+        self.left = left * mm
+        self.top = left * mm
+        self.right = left * mm
+        self.bottom = left * mm
 
 
 class Page(ReportObject):
@@ -228,12 +245,29 @@ class Page(ReportObject):
     reset_page_number = False
     stream = None
     subreport: 'SubReport' = None
+    _pending_operations = None
 
     def __init__(self, report: Report = None):
+        self.height = 297 * mm
+        self.width = 210 * mm
         self.callbacks = []
         self.report = report
         self.bands: List['Band'] = []
         self.margin = Margin()
+
+    def load(self, structure: dict):
+        self.height = structure.get('height', self.height)
+        self.width = structure.get('width', self.width)
+        self._pending_operations = defaultdict(list)
+        bands = {}
+        for b in structure['bands']:
+            band = TAG_REGISTRY[b['type']]()
+            band.page = self
+            band.load(b)
+            bands[band.name] = band
+        for pend, funcs in self._pending_operations.items():
+            for fn in funcs:
+                fn(bands[pend])
 
     def add_band(self, band: 'Band'):
         self.bands.append(band)
@@ -247,17 +281,30 @@ class Page(ReportObject):
         for band in self.bands:
             if isinstance(band, ReportTitle):
                 self._report_title = band
-            if isinstance(band, PageHeader):
+            elif isinstance(band, PageHeader):
                 self._page_header = band
             elif isinstance(band, PageFooter):
                 self._page_footer = band
+
+        # adjust band structure
+        for band in self.bands:
+            if isinstance(band, GroupHeader) and band.footer:
+                band.footer.group_header = band
+                if band.parent:
+                    band.parent.children.append(band)
+            elif isinstance(band, DataBand):
+                band.group_header.children.append(band)
+            elif isinstance(band, GroupFooter):
+                band.group_header.children.append(band)
 
         page = self.new_page(self._context)
         if self._report_title:
             self._report_title.prepare(page, self._context)
 
         for band in self.bands:
-            # Only root bands must be prepared
+            # Only root bands must be called here
+            if isinstance(band, DataBand) and band.group_header:
+                continue
             if band.parent is None and isinstance(band, (GroupHeader, DataBand)):
                 page = band.prepare(page, self._context) or page
 
@@ -348,10 +395,16 @@ class DataProxy:
     def __getitem__(self, item):
         return self.data[0][item]
 
+    def __getitem__(self, item):
+        return self.data[0][item]
+
+    def __len__(self):
+        return len(self.data)
+
 
 class Band(ReportObject):
     bg_color: int = None
-    height: int = None
+    height: int = 40
     width: int = None
     left: int = None
     top: int = None
@@ -361,14 +414,24 @@ class Band(ReportObject):
     band_type = 'band'
     auto_height = False
     _x = _y = 0
+    report: Report = None
     _page: PreparedPage = None
 
-    def __init__(self, page: Page):
-        self.page = page
-        self.report = page.report
+    def __init__(self, page: Page=None):
+        if page:
+            self.page = page
+            self.report = page.report
         self.objects: List['ReportElement'] = []
         self.children: List['Band'] = []
         self.subreports: List['SubReport'] = []
+
+    def load(self, structure: dict):
+        self.height = structure.get('height', self.height)
+        self.width = structure.get('width', self.width or (self._page and self._page.width))
+        self.name = structure.get('name')
+        for obj in structure['objects']:
+            widget = TAG_REGISTRY[obj['type']](self)
+            widget.load(obj)
 
     def add_band(self, band: 'Band'):
         band.parent = self
@@ -483,6 +546,16 @@ class DataBand(Band):
     footer: 'Footer' = None
     group_header: 'GroupHeader' = None
 
+    def load(self, structure: dict):
+        super().load(structure)
+        self.datasource = structure['dataSource']
+        if name := structure.get('groupHeader'):
+            self.page._pending_operations[name].append(partial(setattr, self, 'group_header'))
+        if name := structure.get('header'):
+            self.page._pending_operations[name].append(partial(setattr, self, 'header'))
+        if name := structure.get('footer'):
+            self.page._pending_operations[name].append(partial(setattr, self, 'footer'))
+
     def prepare(self, page: PreparedPage, context):
         data = self.data
         self._context = context
@@ -490,7 +563,7 @@ class DataBand(Band):
             return self.process(data, page, context)
 
     def process(self, data: Iterable, page: PreparedPage, context: dict):
-        context.setdefault('line', 1)
+        context.setdefault('line', 0)
 
         # print the header band
         if self.header and not self.group_header:
@@ -499,7 +572,7 @@ class DataBand(Band):
         self._context = context
         for i, row in enumerate(data):
             row = RecordHelper(row)
-            if self.datasource:
+            if self.datasource and self.datasource.name:
                 context[self.datasource.name] = row
             context['record'] = row
             context['row'] = i + 1
@@ -509,7 +582,8 @@ class DataBand(Band):
             even = context['even'] = bool(i % 2)
             context['odd'] = not even
             page = super().prepare(page, context)
-        context[self.datasource.name] = DataProxy(self.datasource.data)
+        if self.datasource:
+            context[self.datasource.name] = DataProxy(self.datasource.data)
         # print the footer band
         if self.footer and not self.group_header:
             page = self.footer.prepare(page, context)
@@ -539,10 +613,14 @@ class DataBand(Band):
 
 
 class Group:
-    def __init__(self, grouper, data: Iterable, index):
+    def __init__(self, grouper, data: List, index):
         self.grouper = grouper
-        self.data: Iterable = data
+        self.data: List = data
         self.index: int = index
+
+    @property
+    def count(self):
+        return len(self.data)
 
 
 class DetailData(DataBand):
@@ -553,11 +631,29 @@ class GroupHeader(Band):
     reprint_on_new_page = False
     band_type = 'GroupHeader'
     expression: str = None
-    band: DataBand = None
+    _band: DataBand = None
     field: str = None
     footer: 'GroupFooter' = None
     _datasource: DataSource = None
     _template_expression: Template = None
+
+    def load(self, structure: dict):
+        super().load(structure)
+        self.expression = structure.get('expression')
+        if name := structure.get('dataBand'):
+            self.page._pending_operations[name].append(partial(setattr, self, 'band'))
+        if name := structure.get('footer'):
+            self.page._pending_operations[name].append(partial(setattr, self, 'footer'))
+
+    @property
+    def band(self):
+        return self._band
+
+    @band.setter
+    def band(self, value):
+        self._band = value
+        if value:
+            self._datasource = value.datasource
 
     @property
     def template_expression(self):
@@ -581,10 +677,13 @@ class GroupHeader(Band):
     @property
     def datasource(self):
         if self._datasource is None:
-            for child in self.children:
-                if isinstance(child, (GroupHeader, DataBand)):
-                    self._datasource = child.datasource
-                    break
+            if self.band and self.band.datasource:
+                self._datasource = self.band._datasource
+            else:
+                for child in self.children:
+                    if isinstance(child, (GroupHeader, DataBand)):
+                        self._datasource = child.datasource
+                        break
         return self._datasource
 
     def on_new_page(self, page: PreparedPage, context):
@@ -649,14 +748,22 @@ class ReportElement:
     name: str = None
     left: float = 0
     top: float = 0
-    height: float = None
+    height: float = 20
     width: float = None
 
     def __init__(self, band: Band):
         self.band = band
         band.add_element(self)
         self.report = self.band.report
-        self.report.objects.append(self)
+        if self.report:
+            self.report.objects.append(self)
+
+    def load(self, structure: dict):
+        self.name = structure.get('name')
+        self.left = float(structure.get('x', 0))
+        self.top = float(structure.get('y', 0))
+        self.height = float(structure.get('height', 0))
+        self.width = float(structure.get('width', 0))
 
     def process(self, context) -> dict:
         return {
@@ -753,17 +860,27 @@ class Text(ReportElement):
     v_align: str = None
     h_align: str = None
     word_wrap = False
+    width = 120
     allow_tags: bool = False
     allow_expressions: bool = True
     datasource: DataSource = None
     text: Optional[str] = None
+    display_format: DisplayFormat = None
 
     def __init__(self, band: Band, text: str = None):
         super().__init__(band)
-        self.display_format: DisplayFormat = None
         self.font = Font()
         self.border = Border()
         self.text = text
+
+    def load(self, structure: dict):
+        super().load(structure)
+        self.text = structure.get('text')
+        self.width = structure.get('width', self.width)
+        self.height = structure.get('height', self.height)
+        if 'font' in structure:
+            f = structure['font']
+            self.font.size = int(''.join(filter(lambda c: c.isdigit(), f['size'])))
 
     highlight: Highlight = None
 
@@ -799,6 +916,7 @@ class Text(ReportElement):
                 if '${' in new_obj.text:
                     self.report._pending_objects.append((self.template2(new_obj.text.replace('${', '{{').replace('}', '}}')), new_obj))
             except Exception as e:
+                raise
                 print('Error evaluating expression', self.text)
                 print(e)
                 new_obj.text = ERROR_TEXT
@@ -966,3 +1084,23 @@ class Table(ReportElement):
     def add_row(self, row):
         self.rows.append(row)
 
+
+class Rectangle(ReportElement):
+    pass
+
+
+TAG_REGISTRY = {
+    'ReportTitle': ReportTitle,
+    'PageHeader': PageHeader,
+    'PageFooter': PageFooter,
+    'GroupHeader': GroupHeader,
+    'GroupFooter': GroupFooter,
+    'DataBand': DataBand,
+    'Header': HeaderBand,
+    'Footer': Footer,
+    'ReportSummary': ReportSummary,
+    'Text': Text,
+    'Image': Image,
+    'Rectangle': Rectangle,
+    # TODO rectangle/shapes
+}

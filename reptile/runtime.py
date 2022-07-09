@@ -1,4 +1,5 @@
 from typing import List, TYPE_CHECKING
+from dataclasses import dataclass
 
 
 class Document:
@@ -21,7 +22,7 @@ class Document:
 class PreparedPage:
     __slots__ = ('height', 'width', 'bands', 'index', 'margin', 'x', 'y', 'ay')
 
-    def __init__(self, height, width, margin):
+    def __init__(self, height, width, margin=None):
         self.height = height
         self.width = width
         self.y = margin.top
@@ -29,22 +30,22 @@ class PreparedPage:
         self.x = margin.left
         self.bands: List[PreparedBand] = []
 
-    def add_band(self):
-        band = PreparedBand()
+    def add_band(self, left, top, width, height):
+        band = PreparedBand(left, top, width, height)
         self.bands.append(band)
         return band
 
 
+@dataclass
 class PreparedBand:
-    __slots__ = ('left', 'top', 'height', 'width', 'bottom', 'band_type', 'objects', 'fill')
-
-    def __init__(self):
-        self.fill = None
-        self.left = 0
-        self.top = 0
-        self.height = 0
-        self.width = 0
-        self.bottom = 0
+    left: int = None
+    top: int = None
+    width: int = None
+    height: int = None
+    bottom: int = 0
+    band_type = None
+    objects: list = None
+    fill = None
 
     def setPage(self, page: PreparedPage):
         self.top = page.y
@@ -56,6 +57,19 @@ class PreparedText:
         'left', 'top', 'height', 'width', 'allowTags', 'text', 'fontName', 'fontSize', 'fontBold', 'fontItalic',
         'backColor', 'brushStyle', 'vAlign', 'hAlign', 'border', 'wordWrap', 'canGrow', 'error',
     )
+
+    def __init__(self, text=None, left=0, top=0):
+        self.text = text
+        self.left = left
+        self.top = top
+        self.width = None
+        self.height = 0
+        self.fontBold = False
+        self.fontItalic = False
+        self.fontName = 'Helvetica'
+        self.backColor = None
+        self.fontSize = 9
+        self.error = False
 
 
 class PreparedImage:
