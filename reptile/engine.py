@@ -292,7 +292,7 @@ class Page(ReportObject):
                 band.footer.group_header = band
                 if band.parent:
                     band.parent.children.append(band)
-            elif isinstance(band, DataBand):
+            elif isinstance(band, DataBand) and band.group_header:
                 band.group_header.children.append(band)
             elif isinstance(band, GroupFooter):
                 band.group_header.children.append(band)
@@ -760,8 +760,8 @@ class ReportElement:
 
     def load(self, structure: dict):
         self.name = structure.get('name')
-        self.left = float(structure.get('x', 0))
-        self.top = float(structure.get('y', 0))
+        self.left = float(structure.get('left', 0))
+        self.top = float(structure.get('top', 0))
         self.height = float(structure.get('height', 0))
         self.width = float(structure.get('width', 0))
 
@@ -880,7 +880,16 @@ class Text(ReportElement):
         self.height = structure.get('height', self.height)
         if 'font' in structure:
             f = structure['font']
-            self.font.size = int(''.join(filter(lambda c: c.isdigit(), f['size'])))
+            self.font = Font()
+            size = f.get('size')
+            if size:
+                self.font.size = int(''.join(filter(lambda c: c.isdigit(), size)))
+            if f.get('bold'):
+                self.font.bold = True
+            if f.get('italic'):
+                self.font.italic = True
+            if f.get('underline'):
+                self.font.underline = True
 
     highlight: Highlight = None
 
