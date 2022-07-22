@@ -519,12 +519,6 @@ class PageFooter(Band):
 class Footer(Band):
     band_type = 'Footer'
 
-    def __init__(self, page: Page):
-        parent_band = page.bands[-1]
-        super().__init__(page)
-        if isinstance(parent_band, DataBand):
-            parent_band.footer = self
-
 
 class HeaderBand(Band):
     band_type = 'Header'
@@ -811,7 +805,7 @@ class Border:
     right: bool = False
     bottom: bool = False
     width = 1
-    color: int = None
+    color: int = 0x000000
     style: int = None
 
 
@@ -859,6 +853,7 @@ class Text(ReportElement):
     font: Font = None
     v_align: str = None
     h_align: str = None
+    border: Border = None
     word_wrap = False
     width = 120
     allow_tags: bool = False
@@ -890,6 +885,31 @@ class Text(ReportElement):
                 self.font.italic = True
             if f.get('underline'):
                 self.font.underline = True
+        valign = structure.get('vAlign')
+        halign = structure.get('hAlign')
+        if valign == 1:
+            self.v_align = 'center'
+        elif valign == 2:
+            self.v_align = 'right'
+        if halign == 1:
+            self.h_align = 'center'
+        elif halign == 2:
+            self.h_align = 'bottom'
+
+        border = structure.get('border')
+        if border:
+            self.border.width = 1
+            if border['all']:
+                self.border.bottom = self.border.left = self.border.top = self.border.right = True
+            elif border['top']:
+                self.border.top = True
+            elif border['right']:
+                self.border.right = True
+            elif border['bottom']:
+                self.border.bottom = True
+            elif border['left']:
+                self.border.bottom = True
+        print('border', border)
 
     highlight: Highlight = None
 
@@ -925,8 +945,7 @@ class Text(ReportElement):
                 if '${' in new_obj.text:
                     self.report._pending_objects.append((self.template2(new_obj.text.replace('${', '{{').replace('}', '}}')), new_obj))
             except Exception as e:
-                raise
-                print('Error evaluating expression', self.text)
+                print(self.name + ':', 'Error evaluating expression', f'"{self.text}"')
                 print(e)
                 new_obj.text = ERROR_TEXT
                 new_obj.error = True
