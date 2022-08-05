@@ -34,10 +34,11 @@ class ReportEngine:
             return cls.env
         env = Environment()
         env.globals['str'] = str
-        env.globals['sum'] = sum
+        env.globals['sum'] = Sum
         # env.globals['total'] = total
         # env.globals['avg'] = avg
         env.globals['count'] = len
+        env.globals['len'] = len
         if cls.env is None:
             cls.env = env
         return env
@@ -61,9 +62,16 @@ def finalize(context, val):
     return val
 
 
+def Sum(data: Iterable, member: str = None):
+    if member is None:
+        return sum(data)
+    else:
+        return sum(data.values(member))
+
+
 report_env = Environment(finalize=finalize)
 report_env.globals['str'] = str
-report_env.globals['sum'] = sum
+report_env.globals['sum'] = Sum
 # env.globals['total'] = total
 # env.globals['avg'] = avg
 report_env.globals['count'] = len
@@ -163,7 +171,8 @@ class Report:
             'page_count': 0,
             'report': self,
             'date': datetime.date.today(),
-            'time': datetime.datetime.now().strftime('%H:%M')
+            'time': datetime.datetime.now().strftime('%H:%M'),
+            'params': self.variables,
         }
         # detect subreports
         for obj in self.objects:
@@ -808,6 +817,9 @@ class Border:
     color: int = 0x000000
     style: int = None
 
+    def __bool__(self):
+        return self.left or self.top or self.right or self.bottom
+
 
 class RecordHelper:
     def __init__(self, rec):
@@ -871,8 +883,6 @@ class Text(ReportElement):
     def load(self, structure: dict):
         super().load(structure)
         self.text = structure.get('text')
-        self.width = structure.get('width', self.width)
-        self.height = structure.get('height', self.height)
         if 'font' in structure:
             f = structure['font']
             self.font = Font()
@@ -890,11 +900,11 @@ class Text(ReportElement):
         if valign == 1:
             self.v_align = 'center'
         elif valign == 2:
-            self.v_align = 'right'
+            self.v_align = 'bottom'
         if halign == 1:
             self.h_align = 'center'
         elif halign == 2:
-            self.h_align = 'bottom'
+            self.h_align = 'right'
 
         border = structure.get('border')
         if border:
