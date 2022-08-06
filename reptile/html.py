@@ -386,7 +386,7 @@ class GridColumn:
         return self._template
 
     def render(self, context):
-        return h('td', self.template.render(**context))
+        return h('td', self.template.render(**context), class_=self.css)
 
 
 def h(tag, *args, **kwargs):
