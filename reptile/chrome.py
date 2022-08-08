@@ -56,10 +56,9 @@ async def aprint_to_pdf(frame_id, url, html, report_footer=None):
         return base64.decodebytes(res['data'].encode('utf-8'))
 
 
-res = requests.get(f'http://localhost:9222/json/new?')
-data = res.json()
-url = data['webSocketDebuggerUrl']
-
-
 def print_to_pdf(loop, html, report_footer='footer', host='localhost'):
+    res = requests.get(f'http://localhost:9222/json/new?')
+    data = res.json()
+    url = data['webSocketDebuggerUrl']
+
     return loop.run_until_complete(aprint_to_pdf(data['id'], url, html, report_footer=report_footer))
