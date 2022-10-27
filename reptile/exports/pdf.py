@@ -1,14 +1,16 @@
-from PySide6.QtGui import QPainter, QFont, QGuiApplication, QPageSize, QPageLayout
+from PySide6.QtGui import QPainter, QFont, QGuiApplication, QPageSize, QPageLayout, QPdfWriter
 from PySide6.QtPrintSupport import QPrinter
 from PySide6.QtCore import QMarginsF, QSizeF, QSize
-from PySide6.QtWidgets import QApplication
-from reptile.runtime import PreparedBand, PreparedText, PreparedImage, PreparedLine
-from reptile.qt import BandRenderer, TextRenderer, ImageRenderer, LineRenderer
-from reptile.units import mm
+
+from reptile.runtime import PreparedBand, PreparedText #, PreparedImage, PreparedLine
+from reptile.runtime.base import PreparedImage, PreparedLine
+from reptile.engines.qt import BandRenderer, TextRenderer, ImageRenderer, LineRenderer
+from reptile.core.units import mm
 
 
 class QReportEngine:
-    app = QApplication([])
+    app = QGuiApplication([])
+    app.exit()
 
 
 class PDF:
@@ -19,23 +21,23 @@ class PDF:
         self._isFirstPage = False
 
     def export(self, filename):
-        self.printer = QPrinter()
-        self.printer.setOutputFormat(QPrinter.PdfFormat)
-        self.printer.setOutputFileName(filename)
+        self.printer = QPdfWriter(filename)
         self.printer.setPageMargins(QMarginsF(0, 0, 0, 0))
         self.printer.setResolution(96)
-        self.printer.setFullPage(True)
         pages = self.document.pages
         if pages:
             page = pages[0]
             self.printer.setPageSize(QPageSize(QSizeF(page.width / mm, page.height / mm), QPageSize.Millimeter))
         self.painter = QPainter()
+        self.painter.setFont(QFont('Helvetica', 9))
         self.painter.begin(self.printer)
         self._isFirstPage = True
         for page in pages:
             self.exportPage(page)
             self._isFirstPage = False
         self.painter.end()
+        del self.painter
+        del self.printer
 
     def exportPage(self, page):
         if not self._isFirstPage:

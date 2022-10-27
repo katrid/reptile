@@ -1,10 +1,6 @@
-import sys
 import os
 from unittest import TestCase
-import PySide2
-from PySide2.QtWidgets import QApplication
-from reptile import Report, DataSource, Qt
-from reptile.exports import pdf
+from reptile.bands import DataSource, Report
 
 
 class GridTestCase(TestCase):
@@ -19,8 +15,6 @@ class GridTestCase(TestCase):
             }
             for i in range(1, 61)
         ])
-        if isinstance(PySide2.QtGui.qApp, type(None)):
-            cls.app = QApplication(sys.argv)
 
     def test_grid(self):
         rep = Report()

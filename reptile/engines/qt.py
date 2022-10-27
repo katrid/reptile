@@ -3,7 +3,7 @@ from PySide6.QtGui import QPageSize, QTextDocument, QFont, Qt, QPainter, QPixmap
 from PySide6.QtCore import QSize, QRectF, QRect, QLine, QPoint
 
 from .style import Border, Fill
-from .runtime import PreparedText, PreparedPage, PreparedBand, PreparedImage, PreparedLine
+from .runtime import PreparedText, PreparedPage, PreparedBand#, PreparedImage, PreparedLine
 
 
 TAG_REGISTRY = {}
@@ -164,19 +164,19 @@ class TextRenderer:
 
     @classmethod
     def textFlags(cls, self: PreparedText):
-        ww = Qt.TextWordWrap if self.wordWrap else 0
-        return h_align_map.get(self.hAlign, 0) | v_align_map.get(self.vAlign, 0) | ww
+        ww = Qt.TextWordWrap if self.wrap else 0
+        return h_align_map.get(self.halign, 0) | v_align_map.get(self.valign, 0) | ww
 
     @classmethod
     def draw(cls, x, y, self: PreparedText, painter: QPainter):
-        font = QFont(self.fontName)
-        if self.fontSize:
-            font.setPointSizeF(self.fontSize)
-        if self.fontBold:
-            font.setBold(True)
-        if self.fontItalic:
-            font.setItalic(True)
-        brushStyle = self.brushStyle or Qt.BrushStyle.SolidPattern
+        font = None
+        if self.font_name:
+            font = QFont(self.font_name, self.font_size)
+            if self.font_bold:
+                font.setBold(True)
+            if self.font_italic:
+                font.setItalic(True)
+        brushStyle = self.brush_style or Qt.BrushStyle.SolidPattern
         w = self.width
         h = self.height
         tx = self.left + x
@@ -188,10 +188,10 @@ class TextRenderer:
             ty += self.border.width
         rect = QRectF(tx, ty, w, h)
 
-        if self.backColor:
+        if self.background:
             painter.setBrush(brush_style_map[brushStyle])
-            painter.fillRect(rect, QColor('#' + hex(self.backColor)[2:]))
-        if self.allowTags:
+            painter.fillRect(rect, QColor('#' + hex(self.background)[2:]))
+        if self.allow_tags:
             doc = QTextDocument()
             doc.setDefaultFont(font)
             doc.setHtml(self.text)
@@ -202,7 +202,8 @@ class TextRenderer:
             painter.restore()
         else:
             painter.save()
-            painter.setFont(font)
+            if font:
+                painter.setFont(font)
             flags = cls.textFlags(self)
             rect.setX(rect.x() + 2)
             rect.setY(rect.y() + 1)
@@ -231,7 +232,7 @@ class TextRenderer:
 
 class ImageRenderer:
     @classmethod
-    def draw(cls, x, y, self: PreparedImage, painter: QPainter):
+    def draw(cls, x, y, self, painter: QPainter):
         img = QPixmap()
         img.loadFromData(self.picture)
         painter.drawPixmap(
@@ -242,7 +243,7 @@ class ImageRenderer:
 
 class LineRenderer:
     @classmethod
-    def draw(cls, x, y, self: PreparedLine, painter: QPainter):
+    def draw(cls, x, y, self, painter: QPainter):
         old_pen = painter.pen()
         pen = QPen(QColor(0))
         pen.setWidth(self.size)

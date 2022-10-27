@@ -9,11 +9,15 @@ from collections import defaultdict
 import re
 import sqlparse
 from jinja2 import Template, Environment, pass_context
+
+import reptile
+
 if TYPE_CHECKING:
     from .totals import Total
-from .runtime import PreparedBand, PreparedText, PreparedPage, PreparedImage, Document
 
-from .units import mm
+from reptile.core.units import mm
+from reptile.runtime.stream import PreparedPage, PreparedBand, PreparedText, ReportStream
+from reptile.runtime.base import PreparedImage
 
 
 class FormatSettings:
@@ -69,7 +73,7 @@ def Sum(data: Iterable, member: str = None):
         return sum(data.values(member))
 
 
-report_env = Environment(finalize=finalize)
+report_env = reptile.EnvironmentSettings.env
 report_env.globals['str'] = str
 report_env.globals['sum'] = Sum
 # env.globals['total'] = total
@@ -162,7 +166,7 @@ class Report:
     def new_page(self) -> 'Page':
         return Page(self)
 
-    def prepare(self) -> Document:
+    def prepare(self):
         self.stream = stream = []
         self._pending_objects = []
         self.page_count = 0
@@ -193,7 +197,7 @@ class Report:
             self._context['page_count'] = self.page_count
             obj.text = txt.render(self._context)
 
-        doc = Document(self)
+        doc = ReportStream(self)
         doc.pages = stream
         return doc
 
@@ -247,7 +251,7 @@ class Page(ReportObject):
     _report_title = None
     _report: Report = None
     _context: dict = None
-    _current_page: PreparedPage = None
+    _current_page = None
     width: float = 0
     height: float = 0
     title_before_header = True
@@ -337,7 +341,7 @@ class Page(ReportObject):
             cb(page, context)
         return page
 
-    def end_page(self, page: PreparedPage, context):
+    def end_page(self, page, context):
         if self._page_footer:
             page.ay += self._page_footer.height
             page.y = page.ay - self._page_footer.height
@@ -424,7 +428,7 @@ class Band(ReportObject):
     auto_height = False
     _x = _y = 0
     report: Report = None
-    _page: PreparedPage = None
+    _page = None
 
     def __init__(self, page: Page=None):
         if page:
@@ -453,13 +457,13 @@ class Band(ReportObject):
         if element.band != self:
             element.band = self
 
-    def prepare(self, page: PreparedPage, context):
+    def prepare(self, page, context):
         page = self.prepare_objects(page, context)
         if self.subreports:
             self.prepare_subreports(page, context)
         return page
 
-    def prepare_objects(self, page: PreparedPage, context):
+    def prepare_objects(self, page, context):
         context = self._context = context or self.page._context
         band = PreparedBand()
         band.band_type = self.band_type
@@ -475,7 +479,7 @@ class Band(ReportObject):
         band.bottom = band.top + band.height
         if int(band.bottom) > int(page.ay):
             page = self.page.new_page(context)
-            band.setPage(page)
+            band.set_page(page)
         page.bands.append(band)
         page.y = band.bottom
         # save position
@@ -483,7 +487,7 @@ class Band(ReportObject):
         self._y = band.top
         return page
 
-    def prepare_subreports(self, page: PreparedPage, context):
+    def prepare_subreports(self, page, context):
         x = self._x
         y = self._y
         for sub in self.subreports:
@@ -559,13 +563,13 @@ class DataBand(Band):
         if name := structure.get('footer'):
             self.page._pending_operations[name].append(partial(setattr, self, 'footer'))
 
-    def prepare(self, page: PreparedPage, context):
+    def prepare(self, page, context):
         data = self.data
         self._context = context
         if data:
             return self.process(data, page, context)
 
-    def process(self, data: Iterable, page: PreparedPage, context: dict):
+    def process(self, data: Iterable, page, context: dict):
         context.setdefault('line', 0)
 
         # print the header band
@@ -689,17 +693,17 @@ class GroupHeader(Band):
                         break
         return self._datasource
 
-    def on_new_page(self, page: PreparedPage, context):
+    def on_new_page(self, page, context):
         super().prepare(page, context)
 
-    def prepare(self, page: PreparedPage, context):
+    def prepare(self, page, context):
         self._context = context
         datasource = self.datasource
         datasource.open()
         data = datasource.data
         return self.process(data, page, context)
 
-    def process(self, data: Iterable, page: PreparedPage, context):
+    def process(self, data: Iterable, page, context):
         self.page.add_new_page_callback(self.on_new_page)
         groups = groupby(data, key=partial(self.eval_condition, context=context))
         databand = None
@@ -941,7 +945,7 @@ class Text(ReportElement):
     def template2(self, text: str):
         return report_env.from_string(text, {'this': self})
 
-    def process(self, context) -> PreparedText:
+    def process(self, context):
         from .qt import TextRenderer
         new_obj = PreparedText()
         new_obj.height = self.height
@@ -977,7 +981,8 @@ class Text(ReportElement):
         new_obj.wordWrap = self.word_wrap
         if self.can_grow:
             new_obj.canGrow = True
-            size = TextRenderer.calc_size(new_obj)
+            w, h = TextRenderer.calc_size(new_obj)
+            new_obj.height = max(new_obj.height, h)
         return new_obj
 
 
@@ -1054,7 +1059,7 @@ class SubReport(ReportElement):
         self.page_name = value.name
         value.subreport = self
 
-    def prepare(self, page: PreparedPage, context):
+    def prepare(self, page, context):
         # print target page
         cur_page = page
         try:
