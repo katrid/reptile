@@ -2,8 +2,7 @@ from typing import List, Optional
 from PySide6.QtGui import QPageSize, QTextDocument, QFont, Qt, QPainter, QPixmap, QFontMetrics, QPen, QColor
 from PySide6.QtCore import QSize, QRectF, QRect, QLine, QPoint
 
-from .style import Border, Fill
-from .runtime import PreparedText, PreparedPage, PreparedBand#, PreparedImage, PreparedLine
+from reptile.runtime.stream import PreparedText, PreparedPage, PreparedBand#, PreparedImage, PreparedLine
 
 
 TAG_REGISTRY = {}
