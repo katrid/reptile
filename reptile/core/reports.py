@@ -226,7 +226,8 @@ class DataProxy:
         return iter(self.data)
 
     def __getitem__(self, item):
-        return self.data[0][item]
+        if self.data:
+            return self.data[0][item]
 
     def __len__(self):
         return len(self.data)

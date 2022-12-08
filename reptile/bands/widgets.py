@@ -203,7 +203,7 @@ class Image(BandObject):
     @datasource.setter
     def datasource(self, value):
         if isinstance(value, str):
-            value = self.report.get_datasource(value)
+            value = self.parent.page.report.get_datasource(value)
         self._datasource = value
 
 
