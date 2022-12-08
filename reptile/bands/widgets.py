@@ -211,7 +211,6 @@ class Line(BandObject):
     size = 0
 
     def __init__(self, band):
-        super().__init__(band)
         self.border = Border()
 
     def prepare(self, stream: List, context):
