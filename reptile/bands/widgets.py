@@ -140,6 +140,7 @@ class Text(BandObject):
                 if '${' in new_obj.text:
                     context['report']._pending_objects.append((self.template2(new_obj.text), new_obj))
             except Exception as e:
+                logger.error(f"Error evaluating object: {self.name or ''}")
                 logger.exception(e)
                 new_obj.text = EnvironmentSettings.error_text
                 new_obj.error = True
