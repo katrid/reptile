@@ -250,7 +250,6 @@ class TableRow:
 
 class Table(BandObject):
     def __init__(self, band):
-        super().__init__(band)
         self.columns = []
         self.rows = []
 
