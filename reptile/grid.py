@@ -1,17 +1,18 @@
 from typing import Optional
-from reptile.core import (
-    ReportElement, HeaderBand, FooterBand, MasterData, REGISTRY, Page, Text, Qt, QColor, GroupHeader, GroupFooter
+from reptile.bands import (
+    ReportObject, Page, GroupHeader, GroupFooter, DataBand,
+    HeaderBand, Footer as FooterBand, Text,
 )
 from reptile.style import Style
 
 
-class Grid(ReportElement):
+class Grid(ReportObject):
     def __init__(self, parent=None, datasource=None):
         super().__init__(parent)
         self._datasource = datasource
         self.header: Optional[HeaderBand] = None
         self.footer: Optional[FooterBand] = None
-        self.master: Optional[MasterData] = None
+        self.master: Optional[DataBand] = None
         self.group_header: Optional[GroupHeader] = None
         self.group_footer: Optional[GroupFooter] = None
         self._datasource_name: Optional[str] = None
@@ -19,11 +20,11 @@ class Grid(ReportElement):
 
     def init(self, page: Page):
         # init the report style
-        page.report.styles['even'] = Style(bg_color=QColor(14740725))
+        page.report.styles['even'] = Style(bg_color=14740725)
         has_total = False
         if self._datasource is None:
             self._datasource = self.report.default_datasource
-        self.master = MasterData()
+        self.master = DataBand()
         self.master.page = page
         self.master.even_style = 'even'
         fields = []
@@ -83,7 +84,7 @@ class Grid(ReportElement):
         return self.report.datasources[self.datasource_name]
 
 
-class Group(ReportElement):
+class Group(ReportObject):
     header = None
     footer = None
     field = None
@@ -108,7 +109,7 @@ class Group(ReportElement):
             return super().create_element(child)
 
 
-class Field(ReportElement):
+class Field(ReportObject):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.name: Optional[str] = None
@@ -186,6 +187,7 @@ class Field(ReportElement):
         if text:
             self.text = text.strip()
 
+REGISTRY = {}
 
 REGISTRY.update({
     'grid': Grid,

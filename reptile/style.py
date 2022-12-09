@@ -23,3 +23,8 @@ class Border:
 
     def __bool__(self):
         return self.color is not None
+
+
+class Style:
+    def __init__(self, bg_color=None):
+        self.bg_color = bg_color

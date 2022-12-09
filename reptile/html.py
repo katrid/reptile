@@ -1,9 +1,65 @@
+from typing import List
 from itertools import groupby
 from functools import partial
 from collections import defaultdict
 import jinja2
+from jinja2 import pass_context
 
-from .engine import report_env, Group
+import reptile
+
+report_env = reptile.EnvironmentSettings.env
+
+
+class Group:
+    def __init__(self, grouper, data: List, index):
+        self.grouper = grouper
+        self.data: List = data
+        self.index: int = index
+
+    @property
+    def count(self):
+        return len(self.data)
+
+
+@pass_context
+def total(context, op, field=None):
+    if isinstance(op, str) and field is None:
+        field = op
+        op = sum
+    records = context.parent['records']
+    if records:
+        rec = records[0]
+        if isinstance(rec, dict):
+            fn = lambda rec: rec[field] or 0
+        else:
+            fn = lambda rec: getattr(rec, field) or 0
+        return op(list(map(fn, records)))
+    return 0
+
+
+def COUNT(obj):
+    return obj.get_count()
+
+
+def SUM(expr, band=None, flag=None):
+    return sum(expr)
+
+
+def AVG(expr, band=None, flag=None):
+    return sum(expr) / len(expr)
+
+
+def avg(values):
+    return sum(values) / len(values)
+
+
+report_env.globals['total'] = total
+report_env.globals['COUNT'] = COUNT
+report_env.globals['SUM'] = SUM
+report_env.globals['sum'] = sum
+report_env.globals['AVG'] = AVG
+report_env.globals['avg'] = avg
+
 
 
 class HtmlReport:
