@@ -41,7 +41,7 @@ class Page(BasePage):
         bands = {}
         for b in structure['bands']:
             band = TAG_REGISTRY[b['type']]()
-            band.page = self
+            self.add_band(band)
             band.load(b)
             bands[band.name] = band
         for pend, funcs in self._pending_operations.items():
@@ -158,6 +158,7 @@ class Band(ReportObject):
         self.name = structure.get('name')
         for obj in structure['objects']:
             widget = TAG_REGISTRY[obj['type']](self)
+            self.add_object(widget)
             widget.load(obj)
 
     def add_band(self, band: 'Band'):
@@ -324,7 +325,7 @@ class DataBand(Band):
 
     def load(self, structure: dict):
         super().load(structure)
-        self.datasource = structure['dataSource']
+        self.datasource = structure.get('datasource')
         if name := structure.get('groupHeader'):
             self.page._pending_operations[name].append(partial(setattr, self, 'group_header'))
         if name := structure.get('header'):
@@ -420,7 +421,7 @@ class GroupHeader(Band):
         if not self._template_expression:
             if not self.expression and self.field:
                 self.expression = 'record.' + self.field
-            assert self.expression
+            assert self.expression, 'Group expression must be specified'
             if '"' in self.expression:
                 self.expression = self.expression.replace('"', '')
             try:
@@ -492,3 +493,10 @@ class GroupHeader(Band):
 class GroupFooter(Band):
     band_type = 'GroupFooter'
     group_header: GroupHeader = None
+
+
+TAG_REGISTRY = {
+    'GroupHeader': GroupHeader,
+    'GroupFooter': GroupFooter,
+    'DataBand': DataBand,
+}

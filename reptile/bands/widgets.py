@@ -9,9 +9,8 @@ from reptile.core import (
 )
 from reptile.runtime import PreparedText
 from reptile.data import DataSource
-if TYPE_CHECKING:
-    from .bands import Page
 
+from .bands import TAG_REGISTRY
 
 logger = logging.getLogger('reptile')
 
@@ -31,6 +30,13 @@ class BandObject(ReportObject):
         if obj is not None:
             stream.append(obj)
         return obj
+
+    def load(self, structure: dict):
+        self.name = structure['name']
+        self.left = structure.get('left')
+        self.top = structure.get('top')
+        self.height = structure.get('height')
+        self.width = structure.get('width')
 
 
 class Text(BandObject):
@@ -72,6 +78,7 @@ class Text(BandObject):
         if 'font' in structure:
             f = structure['font']
             self.font = Font()
+            self.font.name = f.get('name')
             size = f.get('size')
             if size:
                 self.font.size = int(''.join(filter(lambda c: c.isdigit(), size)))
@@ -105,7 +112,6 @@ class Text(BandObject):
                 self.border.bottom = True
             elif border['left']:
                 self.border.bottom = True
-        print('border', border)
 
     highlight: Highlight = None
 
@@ -277,3 +283,4 @@ class Table(BandObject):
         self.rows.append(row)
 
 
+TAG_REGISTRY['text'] = Text

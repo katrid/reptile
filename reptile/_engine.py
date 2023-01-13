@@ -923,7 +923,6 @@ class Text(ReportElement):
                 self.border.bottom = True
             elif border['left']:
                 self.border.bottom = True
-        print('border', border)
 
     highlight: Highlight = None
 

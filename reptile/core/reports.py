@@ -2,7 +2,9 @@ from typing import List, TYPE_CHECKING, Iterable, Optional
 import datetime
 from pathlib import Path
 from enum import Enum
+import json
 
+from reptile import EnvironmentSettings
 from reptile.core.base import ReportObject, Margin, BasePage
 from reptile.runtime import ReportStream, PreparedPage
 from reptile.core.units import mm
@@ -37,14 +39,16 @@ class Report:
 
     def load(self, structure: dict):
         rep = structure['report']
-        for ds in rep['dataSources']:
+        for ds in rep['datasources']:
             if 'sql' in ds:
-                datasource = self.connection.create_query(name=ds.get('name'), sql=ds['sql'])
+                datasource = self.connection.datasource_factory(name=ds.get('name'), sql=ds['sql'])
             else:
                 datasource = DataSource(ds.get('name'), data=ds['data'])
             self.register_datasource(datasource)
         for p in rep['pages']:
-            page = self.new_page()
+            from reptile.bands import Page
+            page = Page()
+            self.add_page(page)
             page.load(p)
 
     def __getitem__(self, item):
@@ -110,6 +114,9 @@ class Report:
         if filename.endswith('.xml'):
             with open(filename, 'rb') as f:
                 self.from_string(f.read())
+        elif filename.endswith('.json'):
+            with open(filename, 'r') as f:
+                self.load(json.loads(f.read()))
 
     def register_datasource(self, datasource):
         self.datasources.append(datasource)
