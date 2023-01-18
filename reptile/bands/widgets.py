@@ -81,7 +81,10 @@ class Text(BandObject):
             self.font.name = f.get('name')
             size = f.get('size')
             if size:
-                self.font.size = int(''.join(filter(lambda c: c.isdigit(), size)))
+                if isinstance(size, str):
+                    self.font.size = int(''.join(filter(lambda c: c.isdigit(), size)))
+                else:
+                    self.font.size = size
             if f.get('bold'):
                 self.font.bold = True
             if f.get('italic'):
@@ -102,7 +105,7 @@ class Text(BandObject):
         border = structure.get('border')
         if border:
             self.border.width = 1
-            if border['all']:
+            if border.get('all'):
                 self.border.bottom = self.border.left = self.border.top = self.border.right = True
             elif border['top']:
                 self.border.top = True
@@ -112,6 +115,12 @@ class Text(BandObject):
                 self.border.bottom = True
             elif border['left']:
                 self.border.bottom = True
+
+        highlight = structure.get('highlights')
+        if highlight:
+            self.highlight = Highlight(highlight[0])
+        else:
+            self.highlight = Highlight(structure.get('highlight'))
 
     highlight: Highlight = None
 

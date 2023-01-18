@@ -245,7 +245,7 @@ class PageFooter(Band):
     band_type = 'PageFooter'
 
 
-class Footer(Band):
+class FooterBand(Band):
     band_type = 'Footer'
 
 
@@ -496,7 +496,12 @@ class GroupFooter(Band):
 
 
 TAG_REGISTRY = {
+    'ReportTitle': ReportTitle,
+    'HeaderBand': HeaderBand,
+    'FooterBand': FooterBand,
     'GroupHeader': GroupHeader,
     'GroupFooter': GroupFooter,
+    'PageFooter': PageFooter,
+    'PageHeader': PageHeader,
     'DataBand': DataBand,
 }

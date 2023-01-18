@@ -70,6 +70,16 @@ class Highlight:
     background: int = None
     _template: Template = None
 
+    def __init__(self, structure: dict = None):
+        if structure:
+            font = structure.get('font')
+            if font:
+                self.font_name = font.get('name')
+                self.font_size = font.get('size')
+            background = structure.get('background')
+            if background:
+                self.background = background.get('color')
+
     def eval_condition(self, context):
         if self._template is None:
             self._template = EnvironmentSettings.env.from_string('{{%s}}' % self.condition)
