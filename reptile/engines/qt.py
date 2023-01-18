@@ -189,7 +189,7 @@ class TextRenderer:
 
         if self.background:
             painter.setBrush(brush_style_map[brushStyle])
-            painter.fillRect(rect, QColor('#' + hex(self.background)[2:]))
+            painter.fillRect(rect, QColor(self.background))
         if self.allow_tags:
             doc = QTextDocument()
             doc.setDefaultFont(font)

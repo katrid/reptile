@@ -44,7 +44,7 @@ class Text(BandObject):
     _field: str = None
     _template: Template = None
     _context: dict = None
-    background: int = None
+    background: str = None
     color: int = None
     auto_size = False
     can_grow = False
@@ -93,6 +93,7 @@ class Text(BandObject):
                 self.font.underline = True
         valign = structure.get('vAlign')
         halign = structure.get('hAlign')
+
         if valign == 1:
             self.valign = 'center'
         elif valign == 2:
@@ -116,6 +117,13 @@ class Text(BandObject):
             elif border['left']:
                 self.border.bottom = True
 
+        bg = structure.get('background')
+        if bg:
+            self.background = bg.get('color')
+
+        disp_fmt = structure.get('displayFormat')
+        if disp_fmt:
+            self.display_format = DisplayFormat(disp_fmt['format'], disp_fmt['type'])
         highlight = structure.get('highlights')
         if highlight:
             self.highlight = Highlight(highlight[0])
@@ -170,7 +178,7 @@ class Text(BandObject):
         new_obj.brush_style = self.brush_style
         if self.highlight and self.highlight.eval_condition(context):
             new_obj.brush_style = self.highlight.brush_style
-            new_obj.background = self.highlight.background
+            new_obj.background = self.highlight.background or '#ffffff'
         new_obj.valign = self.valign
         new_obj.halign = self.halign
         new_obj.border = self.border

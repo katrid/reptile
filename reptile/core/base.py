@@ -72,6 +72,7 @@ class Highlight:
 
     def __init__(self, structure: dict = None):
         if structure:
+            self.condition = structure['condition']
             font = structure.get('font')
             if font:
                 self.font_name = font.get('name')
