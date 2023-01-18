@@ -157,7 +157,7 @@ class Band(ReportObject):
         self.width = structure.get('width', self.width or (self._page and self._page.width))
         self.name = structure.get('name')
         for obj in structure['objects']:
-            widget = TAG_REGISTRY[obj['type']](self)
+            widget = TAG_REGISTRY[obj['type']]()
             self.add_object(widget)
             widget.load(obj)
 

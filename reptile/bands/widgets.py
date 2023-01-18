@@ -215,7 +215,10 @@ class Image(BandObject):
         img.height = self.height
         img.width = self.width
         if self.field:
-            img.picture = context[self.datasource.name][self.field]
+            if self._datasource:
+                img.picture = context[self.datasource.name][self.field]
+            else:
+                img.picture = self.parent.page.report.variables[self.field]
         else:
             img.picture = self.picture
         stream.append(img)
@@ -229,6 +232,10 @@ class Image(BandObject):
         if isinstance(value, str):
             value = self.parent.page.report.get_datasource(value)
         self._datasource = value
+
+    def load(self, structure: dict):
+        super().load(structure)
+        self.field = structure.get('field')
 
 
 class Line(BandObject):
@@ -301,3 +308,4 @@ class Table(BandObject):
 
 
 TAG_REGISTRY['text'] = Text
+TAG_REGISTRY['image'] = Image
