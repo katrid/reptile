@@ -218,7 +218,10 @@ class Image(BandObject):
             if self._datasource:
                 img.picture = context[self.datasource.name][self.field]
             else:
-                img.picture = self.parent.page.report.variables[self.field]
+                try:
+                    img.picture = self.parent.page.report.variables[self.field]
+                except KeyError:
+                    print('Image not found for field', self.field)
         else:
             img.picture = self.picture
         stream.append(img)
