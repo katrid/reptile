@@ -115,7 +115,7 @@ class Text(BandObject):
             elif border['bottom']:
                 self.border.bottom = True
             elif border['left']:
-                self.border.bottom = True
+                self.border.left = True
 
         bg = structure.get('background')
         if bg:
