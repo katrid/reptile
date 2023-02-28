@@ -188,6 +188,7 @@ class TextRenderer:
         rect = QRectF(tx, ty, w, h)
 
         if self.background:
+            print('bg', self.text)
             painter.setBrush(brush_style_map[brushStyle])
             painter.fillRect(rect, QColor(self.background))
         if self.allow_tags:
@@ -200,20 +201,20 @@ class TextRenderer:
             doc.drawContents(painter, QRectF(0, 0, self.width, self.height))
             painter.restore()
         else:
-            painter.save()
+            # painter.save()
             if font:
                 painter.setFont(font)
             flags = cls.textFlags(self)
             rect.setX(rect.x() + 2)
             rect.setY(rect.y() + 1)
             painter.drawText(rect, flags, self.text)
-            painter.restore()
+            # painter.restore()
         if self.border and self.border.color is not None:
-            old_pen = painter.pen()
-            pen = QPen(QColor(self.border.color), self.border.width, pen_style_map.get(self.border.style, Qt.PenStyle.SolidLine))
+            painter.setBrush(Qt.BrushStyle.SolidPattern)
+            pen = QPen(QColor(self.border.color), self.border.width * 1.01, pen_style_map.get(self.border.style, Qt.PenStyle.SolidLine))
             painter.setPen(pen)
+            print(self.text, self.border.width)
             painter.drawLines(cls.getLines(self, self.left + x, self.top + y, self.left + self.width + x, self.top + y + self.height))
-            painter.setPen(old_pen)
 
     @classmethod
     def getLines(cls, self, x1, y1, x2, y2):
@@ -243,6 +244,7 @@ class ImageRenderer:
 class LineRenderer:
     @classmethod
     def draw(cls, x, y, self, painter: QPainter):
+        print('draw line')
         old_pen = painter.pen()
         pen = QPen(QColor(0))
         pen.setWidth(self.size)
