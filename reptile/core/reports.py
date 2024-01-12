@@ -4,11 +4,11 @@ from pathlib import Path
 from enum import Enum
 import json
 
+import reptile
 from reptile import EnvironmentSettings
 from reptile.core.base import ReportObject, Margin, BasePage
 from reptile.runtime import ReportStream, PreparedPage
 from reptile.core.units import mm
-
 
 class ReportType(Enum):
     AUTO = 0
@@ -43,13 +43,13 @@ class Report:
             if 'sql' in ds:
                 datasource = self.connection.datasource_factory(name=ds.get('name'), sql=ds['sql'])
             else:
-                datasource = DataSource(ds.get('name'), data=ds['data'])
+                datasource = reptile.data.base.DataSource(ds.get('data'), ds.get('name'))
             self.register_datasource(datasource)
         for p in rep['pages']:
             from reptile.bands import Page
             page = Page()
             self.add_page(page)
-            page.load(p)
+            page.load(p, rep.get('watermark'))
 
     def __getitem__(self, item):
         for page in self.pages:
@@ -86,9 +86,9 @@ class Report:
         #         obj.report_page = self[obj.page_name]
         # initialize context with datasource
         for ds in self.datasources:
-            if ds.name:
+            if ds.name and hasattr(ds, 'params'):
                 ds.params.assign(self.variables)
-                ds.open()
+                ds.open(self.variables)
                 self._context[ds.name] = DataProxy(ds.data)
 
         for page in self.pages:

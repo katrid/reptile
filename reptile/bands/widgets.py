@@ -93,6 +93,7 @@ class Text(BandObject):
                 self.font.underline = True
         valign = structure.get('vAlign')
         halign = structure.get('hAlign')
+        self.word_wrap = structure.get('wrap', False)
 
         if valign == 1:
             self.valign = 'center'
@@ -105,7 +106,7 @@ class Text(BandObject):
 
         border = structure.get('border')
         if border:
-            self.border.width = 1
+            self.border.width = border.get('width', 0.5)
             if border.get('all'):
                 self.border.bottom = self.border.left = self.border.top = self.border.right = True
             elif border['top']:
