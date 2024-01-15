@@ -155,11 +155,12 @@ class Line(Container):
 
 
 class PreparedPage:
-    __slots__ = ('height', 'width', 'bands', 'index', 'margin', 'x', 'y', 'ay')
+    __slots__ = ('height', 'width', 'bands', 'index', 'margin', 'x', 'y', 'ay', 'watermark')
 
-    def __init__(self, height, width, margin=None):
+    def __init__(self, height, width, margin=None, watermark=None):
         self.height = height
         self.width = width
+        self.watermark = watermark
         if margin:
             self.y = margin.top
             self.ay = height - margin.bottom

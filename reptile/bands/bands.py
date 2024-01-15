@@ -26,6 +26,7 @@ class Page(BasePage):
     stream = None
     subreport: 'SubReport' = None
     _pending_operations = None
+    watermark = None
 
     def __init__(self):
         self.height = 297 * mm
@@ -34,9 +35,10 @@ class Page(BasePage):
         self.bands: List['Band'] = []
         self.margin = Margin()
 
-    def load(self, structure: dict):
+    def load(self, structure: dict, watermark=None):
         self.height = structure.get('height', self.height)
         self.width = structure.get('width', self.width)
+        self.watermark = watermark
         self._pending_operations = defaultdict(list)
         bands = {}
         for b in structure['bands']:
@@ -95,7 +97,7 @@ class Page(BasePage):
     def new_page(self, context):
         if self._current_page is not None:
             self.end_page(self._current_page, context)
-        page = PreparedPage(self.height, self.width, self.margin)
+        page = PreparedPage(self.height, self.width, self.margin, self.watermark)
         self.report.page_count += 1
         page.index = self.report.page_count
         context['page_index'] = page.index

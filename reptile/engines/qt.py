@@ -1,5 +1,5 @@
 from typing import List, Optional
-from PySide6.QtGui import QPageSize, QTextDocument, QFont, Qt, QPainter, QPixmap, QFontMetrics, QPen, QColor
+from PySide6.QtGui import QPageSize, QTextDocument, QFont, Qt, QPainter, QPixmap, QFontMetrics, QPen, QColor, QFontDatabase
 from PySide6.QtCore import QSize, QRectF, QRect, QLine, QPoint
 
 from reptile.runtime.stream import PreparedText, PreparedPage, PreparedBand#, PreparedImage, PreparedLine
@@ -175,20 +175,20 @@ class TextRenderer:
                 font.setBold(True)
             if self.font_italic:
                 font.setItalic(True)
-        brushStyle = self.brush_style or Qt.BrushStyle.SolidPattern
+        brushStyle = self.brush_style or 1
         w = self.width
         h = self.height
         tx = self.left + x
         ty = self.top + y
         if self.border:
-            w -= self.border.width
+            w -= self.border.width * 2
             h -= self.border.width * 2
-            tx += self.border.width
-            ty += self.border.width
+            tx -= self.border.width * 2
+            # ty += self.border.width
         rect = QRectF(tx, ty, w, h)
 
         if self.background:
-            print('bg', self.text)
+            # print('bg', self.text)
             painter.setBrush(brush_style_map[brushStyle])
             painter.fillRect(rect, QColor(self.background))
         if self.allow_tags:
@@ -211,9 +211,8 @@ class TextRenderer:
             # painter.restore()
         if self.border and self.border.color is not None:
             painter.setBrush(Qt.BrushStyle.SolidPattern)
-            pen = QPen(QColor(self.border.color), self.border.width * 1.01, pen_style_map.get(self.border.style, Qt.PenStyle.SolidLine))
+            pen = QPen(QColor(self.border.color), self.border.width, pen_style_map.get(self.border.style, Qt.PenStyle.SolidLine))
             painter.setPen(pen)
-            print(self.text, self.border.width)
             painter.drawLines(cls.getLines(self, self.left + x, self.top + y, self.left + self.width + x, self.top + y + self.height))
 
     @classmethod

@@ -10,8 +10,9 @@ class DataSource(ReportObject):
     connection = None
     name: str = None
 
-    def __init__(self, data: Iterable = None):
+    def __init__(self, data: Iterable = None, name: str = None):
         self._data = data
+        self.name = name
 
     def open(self):
         self._opened = True

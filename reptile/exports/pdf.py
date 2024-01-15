@@ -1,6 +1,6 @@
-from PySide6.QtGui import QPainter, QFont, QGuiApplication, QPageSize, QPageLayout, QPdfWriter
+from PySide6.QtGui import QPainter, QFont, QGuiApplication, QPageSize, QPageLayout, QPdfWriter, QPen, QColor
 from PySide6.QtPrintSupport import QPrinter
-from PySide6.QtCore import QMarginsF, QSizeF, QSize
+from PySide6.QtCore import QMarginsF, QSizeF, QSize, QPoint
 
 from reptile.runtime import PreparedBand, PreparedText, PreparedImage, PreparedLine
 from reptile.engines.qt import BandRenderer, TextRenderer, ImageRenderer, LineRenderer
@@ -32,11 +32,23 @@ class PDF:
         self.painter.begin(self.printer)
         self._isFirstPage = True
         for page in pages:
+            if watermark := getattr(page, 'watermark'):
+                self.draw_watermark(watermark, page)
             self.exportPage(page)
             self._isFirstPage = False
         self.painter.end()
         del self.painter
         del self.printer
+
+    def draw_watermark(self, wm, page):
+        self.painter.save()
+        self.painter.setFont(QFont('Helvetica', wm.get('size', 72)))
+        self.painter.rotate(wm.get('angle', 0))
+        self.painter.setPen(QPen(QColor(0)))
+        self.painter.setOpacity(wm.get('opacity', .3))
+        self.painter.drawText(QPoint(page.width - self.painter.fontMetrics().horizontalAdvance(wm.get('text')) - (page.x * 1.5), page.height/2), wm.get('text'))
+        self.painter.restore()
+        self.painter.save()
 
     def exportPage(self, page):
         if not self._isFirstPage:
