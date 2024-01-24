@@ -27,7 +27,7 @@ class PreparedObject:
 class PreparedText(PreparedObject):
     __slots__ = (
         'left', 'top', 'height', 'width', 'allow_tags', 'text', 'font_name', 'font_size', 'font_bold', 'font_italic',
-        'background', 'brush_style', 'valign', 'halign', 'border', 'wrap', 'can_grow', 'error',
+        'background', 'brush_style', 'valign', 'halign', 'border', 'wrap', 'can_grow', 'error', 'qrcode'
     )
 
     def __init__(self, text=None, x=0, y=0):
@@ -42,6 +42,7 @@ class PreparedText(PreparedObject):
         self.font_size = 9
         self.background = None
         self.wrap = False
+        self.qrcode = False
         self.error = False
 
     def dump(self):

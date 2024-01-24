@@ -54,6 +54,7 @@ class Text(BandObject):
     valign: str = None
     border: Border = None
     word_wrap = False
+    qrcode: bool = False
     top = 0
     left = 0
     width = 120
@@ -94,6 +95,7 @@ class Text(BandObject):
         valign = structure.get('vAlign')
         halign = structure.get('hAlign')
         self.word_wrap = structure.get('wrap', False)
+        self.qrcode = structure.get('qrCode', False)
 
         if valign == 1:
             self.valign = 'center'
@@ -109,13 +111,13 @@ class Text(BandObject):
             self.border.width = border.get('width', 0.5)
             if border.get('all'):
                 self.border.bottom = self.border.left = self.border.top = self.border.right = True
-            elif border['top']:
+            elif border.get('top'):
                 self.border.top = True
-            elif border['right']:
+            elif border.get('right'):
                 self.border.right = True
-            elif border['bottom']:
+            elif border.get('bottom'):
                 self.border.bottom = True
-            elif border['left']:
+            elif border.get('left'):
                 self.border.left = True
 
         bg = structure.get('background')
@@ -184,6 +186,7 @@ class Text(BandObject):
         new_obj.halign = self.halign
         new_obj.border = self.border
         new_obj.wrap = self.word_wrap
+        new_obj.qrcode = self.qrcode
         if (self.can_grow or self.can_shrink) and level > 1 and self.calc_size:
             w, h = self.calc_size(new_obj)
             if self.can_shrink:
