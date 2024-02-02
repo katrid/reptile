@@ -4,7 +4,7 @@ from PySide6.QtGui import QPageSize, QTextDocument, QFont, Qt, QPainter, QPixmap
 from PySide6.QtCore import QSize, QRectF, QRect, QLine, QPoint, Qt as QtCore
 from PySide6.QtWidgets import QLabel
 
-from reptile.runtime.stream import PreparedText, PreparedPage, PreparedBand#, PreparedImage, PreparedLine
+from reptile.runtime.stream import PreparedText, PreparedPage, PreparedBand, PreparedImage, PreparedLine, SizeMode
 
 
 TAG_REGISTRY = {}
@@ -248,20 +248,33 @@ class TextRenderer:
 
 class ImageRenderer:
     @classmethod
-    def draw(cls, x, y, self, painter: QPainter):
+    def draw(cls, x, y, obj: PreparedImage, painter: QPainter):
+        from PySide6.QtGui import Qt
         img = QPixmap()
-        img.loadFromData(self.picture)
-        painter.drawPixmap(
-            x + self.left, y + self.top,
-            img.scaled(self.width, self.height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        )
+        img.loadFromData(obj.picture)
+        painter.save()
+        painter.translate(x + obj.left, y + obj.top)
+        if obj.size_mode == SizeMode.NORMAL:
+            painter.setClipRect(QRect(0, 0, obj.width, obj.height))
+            painter.drawPixmap(0, 0, img)
+        elif obj.size_mode == SizeMode.ZOOM:
+            painter.drawPixmap(
+                x + obj.left, y + obj.top,
+                img.scaled(obj.width, obj.height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            )
+        elif obj.size_mode == SizeMode.CENTER:
+            painter.setClipRect(QRect(0, 0, obj.width, obj.height))
+            pt = img.size()
+            x = (obj.width / 2) - (pt.width() / 2)
+            y = (obj.height / 2) - (pt.height() / 2)
+            painter.drawPixmap(x, y, img)
+        painter.restore()
 
 
 class LineRenderer:
     @classmethod
     def draw(cls, x, y, self, painter: QPainter):
-        print('draw line')
-        old_pen = painter.pen()
+        painter.save()
         pen = QPen(QColor(0))
         pen.setWidth(self.size)
         pen.setStyle(Qt.PenStyle.SolidLine)
@@ -269,7 +282,7 @@ class LineRenderer:
         tx = self.left + x
         ty = self.top + y
         painter.drawLine(QLine(tx, ty, tx + self.width, ty + self.height))
-        painter.setPen(old_pen)
+        painter.restore()
 
 
 type_map = {

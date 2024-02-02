@@ -58,11 +58,19 @@ class PreparedText(PreparedObject):
         }
 
 
+class SizeMode(enum.IntEnum):
+    NORMAL = 0
+    CENTER = 1
+    AUTO = 2
+    ZOOM = 3
+    STRETCH = 4
+
+
 class PreparedImage:
-    __slots__ = ('picture', 'left', 'top', 'height', 'width')
+    __slots__ = ('picture', 'left', 'top', 'height', 'width', 'size_mode')
 
     def __init__(self):
-        self.picture = None
+        self.size_mode = SizeMode.NORMAL
         self.left = 0
         self.top = 0
         self.height = 0
