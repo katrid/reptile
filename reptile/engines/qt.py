@@ -1,6 +1,8 @@
+import os
 from typing import List, Optional
 from PySide6.QtGui import QPageSize, QTextDocument, QFont, Qt, QPainter, QPixmap, QFontMetrics, QPen, QColor, QFontDatabase
-from PySide6.QtCore import QSize, QRectF, QRect, QLine, QPoint
+from PySide6.QtCore import QSize, QRectF, QRect, QLine, QPoint, Qt as QtCore
+from PySide6.QtWidgets import QLabel
 
 from reptile.runtime.stream import PreparedText, PreparedPage, PreparedBand, PreparedImage, PreparedLine, SizeMode
 
@@ -165,55 +167,70 @@ class TextRenderer:
     def textFlags(cls, self: PreparedText):
         ww = Qt.TextWordWrap if self.wrap else 0
         return h_align_map.get(self.halign, 0) | v_align_map.get(self.valign, 0) | ww
+    
+    @classmethod
+    def draw_qr_code(cls, x, y, self: PreparedText, painter: QPainter):
+        # TEMPORÁRIO: utilizacao da lib qrcode
+        import qrcode
+        qr = qrcode.make(self.text)
+        filepath = os.path.join(os.path.dirname(os.path.dirname((os.path.dirname(__file__)))), 'tmp', f'{self.text.replace("/", "")}.png')
+        qr.save(filepath)
+        img = QPixmap(filepath)
+        painter.drawPixmap(x + self.left, y + self.top, img.scaled(self.width, self.height, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        # remove qrcode file
+        os.remove(filepath)
 
     @classmethod
     def draw(cls, x, y, self: PreparedText, painter: QPainter):
-        font = None
-        if self.font_name:
-            font = QFont(self.font_name, self.font_size)
-            if self.font_bold:
-                font.setBold(True)
-            if self.font_italic:
-                font.setItalic(True)
-        brushStyle = self.brush_style or 1
-        w = self.width
-        h = self.height
-        tx = self.left + x
-        ty = self.top + y
-        if self.border:
-            w -= self.border.width * 2
-            h -= self.border.width * 2
-            tx -= self.border.width * 2
-            # ty += self.border.width
-        rect = QRectF(tx, ty, w, h)
-
-        if self.background:
-            # print('bg', self.text)
-            painter.setBrush(brush_style_map[brushStyle])
-            painter.fillRect(rect, QColor(self.background))
-        if self.allow_tags:
-            doc = QTextDocument()
-            doc.setDefaultFont(font)
-            doc.setHtml(self.text)
-            doc.setDocumentMargin(0)
-            painter.save()
-            painter.translate(tx + 2, ty + 1)
-            doc.drawContents(painter, QRectF(0, 0, self.width, self.height))
-            painter.restore()
+        if self.qrcode:
+            cls.draw_qr_code(x, y, self, painter)
         else:
-            # painter.save()
-            if font:
-                painter.setFont(font)
-            flags = cls.textFlags(self)
-            rect.setX(rect.x() + 2)
-            rect.setY(rect.y() + 1)
-            painter.drawText(rect, flags, self.text)
-            # painter.restore()
-        if self.border and self.border.color is not None:
-            painter.setBrush(Qt.BrushStyle.SolidPattern)
-            pen = QPen(QColor(self.border.color), self.border.width, pen_style_map.get(self.border.style, Qt.PenStyle.SolidLine))
-            painter.setPen(pen)
-            painter.drawLines(cls.getLines(self, self.left + x, self.top + y, self.left + self.width + x, self.top + y + self.height))
+            font = None
+            if self.font_name:
+                font = QFont(self.font_name, self.font_size)
+                if self.font_bold:
+                    font.setBold(True)
+                if self.font_italic:
+                    font.setItalic(True)
+            brushStyle = self.brush_style or 1
+            w = self.width
+            h = self.height
+            tx = self.left + x
+            ty = self.top + y
+            if self.border:
+                w -= self.border.width * 2
+                h -= self.border.width * 2
+                tx -= self.border.width * 2
+                # ty += self.border.width
+            rect = QRectF(tx, ty, w, h)
+
+            if self.background:
+                # print('bg', self.text)
+                painter.setBrush(brush_style_map[brushStyle])
+                painter.fillRect(rect, QColor(self.background))
+            if self.allow_tags:
+                doc = QTextDocument()
+                doc.setDefaultFont(font)
+                doc.setHtml(self.text)
+                doc.setDocumentMargin(0)
+                painter.save()
+                painter.translate(tx + 2, ty + 1)
+                doc.drawContents(painter, QRectF(0, 0, self.width, self.height))
+                painter.restore()
+            else:
+                # painter.save()
+                if font:
+                    painter.setFont(font)
+                flags = cls.textFlags(self)
+                rect.setX(rect.x() + 2)
+                rect.setY(rect.y() + 1)
+                painter.drawText(rect, flags, self.text)
+                # painter.restore()
+            if self.border and self.border.color is not None:
+                painter.setBrush(Qt.BrushStyle.SolidPattern)
+                pen = QPen(QColor(self.border.color), self.border.width, pen_style_map.get(self.border.style, Qt.PenStyle.SolidLine))
+                painter.setPen(pen)
+                painter.drawLines(cls.getLines(self, self.left + x, self.top + y, self.left + self.width + x, self.top + y + self.height))
 
     @classmethod
     def getLines(cls, self, x1, y1, x2, y2):
@@ -242,7 +259,7 @@ class ImageRenderer:
             painter.drawPixmap(0, 0, img)
         elif obj.size_mode == SizeMode.ZOOM:
             painter.drawPixmap(
-                x + obj.left, y + obj.top,
+                0, 0,
                 img.scaled(obj.width, obj.height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
             )
         elif obj.size_mode == SizeMode.CENTER:
