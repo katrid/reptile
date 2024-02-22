@@ -259,7 +259,7 @@ class ImageRenderer:
             painter.drawPixmap(0, 0, img)
         elif obj.size_mode == SizeMode.ZOOM:
             painter.drawPixmap(
-                x + obj.left, y + obj.top,
+                0, 0,
                 img.scaled(obj.width, obj.height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
             )
         elif obj.size_mode == SizeMode.CENTER:

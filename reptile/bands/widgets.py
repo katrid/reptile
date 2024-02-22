@@ -210,6 +210,7 @@ class Image(BandObject):
     picture: bytes = None
     _datasource: DataSource = None
     field: str = None
+    size_mode = None
 
     def prepare(self, stream: List, context):
         from reptile.runtime import PreparedImage
@@ -218,6 +219,7 @@ class Image(BandObject):
         img.top = self.top
         img.height = self.height
         img.width = self.width
+        img.size_mode = self.size_mode
         if self.field:
             if self._datasource:
                 img.picture = context[self.datasource.name][self.field]
@@ -241,8 +243,16 @@ class Image(BandObject):
         self._datasource = value
 
     def load(self, structure: dict):
+        from reptile.runtime import SizeMode
         super().load(structure)
         self.field = structure.get('field')
+        size_mode = structure.get('sizeMode')
+        if size_mode == 'center':
+            self.size_mode = SizeMode.CENTER
+        elif size_mode == 'zoom':
+            self.size_mode = SizeMode.ZOOM
+        else:
+            self.size_mode = SizeMode.NORMAL
 
 
 class Line(BandObject):
