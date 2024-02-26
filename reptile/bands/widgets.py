@@ -9,7 +9,6 @@ from reptile.core import (
 )
 from reptile.runtime import PreparedText
 from reptile.data import DataSource
-
 from .bands import TAG_REGISTRY
 
 logger = logging.getLogger('reptile')
@@ -111,14 +110,15 @@ class Text(BandObject):
             self.border.width = border.get('width', 0.5)
             if border.get('all'):
                 self.border.bottom = self.border.left = self.border.top = self.border.right = True
-            elif border.get('top'):
-                self.border.top = True
-            elif border.get('right'):
-                self.border.right = True
-            elif border.get('bottom'):
-                self.border.bottom = True
-            elif border.get('left'):
-                self.border.left = True
+            else:
+                if border.get('top'):
+                    self.border.top = True
+                if border.get('right'):
+                    self.border.right = True
+                if border.get('bottom'):
+                    self.border.bottom = True
+                if border.get('left'):
+                    self.border.left = True
 
         bg = structure.get('background')
         if bg:

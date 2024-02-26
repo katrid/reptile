@@ -75,6 +75,7 @@ class PreparedImage:
         self.top = 0
         self.height = 0
         self.width = 0
+        self.picture = None
 
 
 class PreparedLine:
