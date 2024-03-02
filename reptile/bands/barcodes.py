@@ -17,7 +17,7 @@ class Barcode(BandObject):
         from barcode.writer import ImageWriter
         from reptile.runtime import PreparedImage, SizeMode
         img = PreparedImage()
-        img.size_mode = SizeMode.NORMAL
+        img.size_mode = SizeMode.ZOOM
         img.left = self.left
         img.top = self.top
         img.height = self.height
