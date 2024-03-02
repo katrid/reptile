@@ -260,7 +260,7 @@ class ImageRenderer:
         elif obj.size_mode == SizeMode.ZOOM:
             painter.drawPixmap(
                 0, 0,
-                img.scaled(obj.width, obj.height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                img.scaled(obj.width, obj.height, Qt.AspectRatioMode.IgnoreAspectRatio)
             )
         elif obj.size_mode == SizeMode.CENTER:
             painter.setClipRect(QRect(0, 0, obj.width, obj.height))
