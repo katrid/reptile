@@ -24,7 +24,7 @@ class Barcode(BandObject):
         img.width = self.width
         if self.field:
             if self._datasource:
-                code = context[self.datasource][self.field]
+                code = context[self.datasource.name][self.field]
                 if code is not None:
                     Code = None
                     if self.barcode_type == 'code128':
