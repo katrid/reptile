@@ -32,7 +32,7 @@ class Barcode(BandObject):
                     elif self.barcode_type == 'ITF-14':
                         Code = ITF
                     s = BytesIO()
-                    Code(code, writer=ImageWriter()).write(s, options={'write_text': True, 'quiet_zone': 5.0, 'dpi': 300})
+                    Code(code, writer=ImageWriter()).write(s, options={'write_text': False, 'quiet_zone': 5.0, 'dpi': 300})
                     s.seek(0)
                     img.picture = s.read()
             else:
