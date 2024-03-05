@@ -259,3 +259,18 @@ class ReportStream:
             'pages': [p.dump() for p in self.pages],
             'level': self.report._level,
         }
+
+
+class PreparedBarcode:
+    __slots__ = ('barcode', 'data', 'left', 'top', 'height', 'width', 'size_mode', 'bar_width')
+    data: bytes
+    barcode: str
+    bar_width: float
+
+    def __init__(self):
+        self.size_mode = SizeMode.NORMAL
+        self.left = 0
+        self.top = 0
+        self.height = 0
+        self.width = 0
+        self.bar_width = 0.5
