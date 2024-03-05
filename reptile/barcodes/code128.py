@@ -97,8 +97,8 @@ def get_png(barcode: str, thickness=3, width: int = None, height: int = 150) -> 
     img = Image.new('1', (int(width), int(height)), 1)
     draw = ImageDraw.Draw(img)
 
-    x = 10
-    y = 10
+    x = 0
+    y = 0
     d = True
     for c in barcode:
         if d:
