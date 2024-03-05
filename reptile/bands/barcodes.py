@@ -20,7 +20,7 @@ class Barcode(BandObject):
         from reptile.runtime import PreparedBarcode, SizeMode, PreparedImage
         from reptile.barcodes import code128
         img = PreparedImage()
-        img.size_mode = SizeMode.CENTER
+        img.size_mode = SizeMode.ZOOM
         img.left = self.left
         img.top = self.top
         img.height = self.height
@@ -36,7 +36,7 @@ class Barcode(BandObject):
                 if code is not None:
                     # s = BytesIO()
                     # Code(code, writer=ImageWriter()).write(s, options={'write_text': self.show_text, 'dpi': 300})
-                    img.picture = code128.get_png(code128.get_barcode(code), width=self.width, height=self.height)
+                    img.picture = code128.get_png(code128.get_barcode(code), height=self.height)
             else:
                 warnings.warn('Datasource not found')
         else:
