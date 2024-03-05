@@ -85,7 +85,7 @@ def get_barcode(s: str) -> str:
     return ''.join(str(i) for i in ([CODE[c] for c in data] + [CODE[checksum], CODE[STOP]]))
 
 
-def get_png(barcode: str, thickness=0.2, width: int = None, height: int = 150) -> bytes:
+def get_png(barcode: str, thickness=3, width: int = None, height: int = 150) -> bytes:
     from PIL import Image, ImageDraw
 
     barcode = [int(c) * 3 for c in barcode]
@@ -93,7 +93,7 @@ def get_png(barcode: str, thickness=0.2, width: int = None, height: int = 150) -
     stream = io.BytesIO()
     if width is None:
         width = sum(barcode) * lw
-    width += 20
+    # width += 20
     img = Image.new('1', (int(width), int(height)), 1)
     draw = ImageDraw.Draw(img)
 
