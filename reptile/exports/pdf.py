@@ -2,8 +2,8 @@ from PySide6.QtGui import QPainter, QFont, QGuiApplication, QPageSize, QPageLayo
 from PySide6.QtPrintSupport import QPrinter
 from PySide6.QtCore import QMarginsF, QSizeF, QSize, QPoint
 
-from reptile.runtime import PreparedBand, PreparedText, PreparedImage, PreparedLine
-from reptile.engines.qt import BandRenderer, TextRenderer, ImageRenderer, LineRenderer
+from reptile.runtime import PreparedBand, PreparedText, PreparedImage, PreparedLine, PreparedBarcode
+from reptile.engines.qt import BandRenderer, TextRenderer, ImageRenderer, LineRenderer, BarcodeRenderer
 from reptile.core.units import mm
 
 
@@ -65,4 +65,6 @@ class PDF:
                 ImageRenderer.draw(band.left, band.top, obj, self.painter)
             elif isinstance(obj, PreparedLine):
                 LineRenderer.draw(band.left, band.top, obj, self.painter)
+            elif isinstance(obj, PreparedBarcode):
+                BarcodeRenderer.draw(band.left, band.top, obj, self.painter)
 
