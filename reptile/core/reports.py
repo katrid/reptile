@@ -89,7 +89,7 @@ class Report:
             if ds.name and hasattr(ds, 'params'):
                 ds.params.assign(self.variables)
                 ds.open(self.variables)
-                self._context[ds.name] = DataProxy(ds.data)
+            self._context[ds.name] = DataProxy(ds.data)
 
         for page in self.pages:
             if not page.subreport:
