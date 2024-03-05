@@ -4,7 +4,10 @@ from PySide6.QtGui import QPageSize, QTextDocument, QFont, Qt, QPainter, QPixmap
 from PySide6.QtCore import QSize, QRectF, QRect, QLine, QPoint, Qt as QtCore
 from PySide6.QtWidgets import QLabel
 
-from reptile.runtime.stream import PreparedText, PreparedPage, PreparedBand, PreparedImage, PreparedLine, SizeMode
+from reptile.runtime.stream import (
+    PreparedText, PreparedPage, PreparedBand, PreparedImage, PreparedLine, SizeMode, PreparedBarcode,
+)
+from reptile.core.units import mm
 
 
 TAG_REGISTRY = {}
@@ -282,6 +285,38 @@ class LineRenderer:
         tx = self.left + x
         ty = self.top + y
         painter.drawLine(QLine(tx, ty, tx + self.width, ty + self.height))
+        painter.restore()
+
+
+class BarcodeRenderer:
+    @classmethod
+    def draw(cls, x, y, obj: PreparedBarcode, painter: QPainter):
+        painter.save()
+        painter.translate(x + obj.left, y + obj.top)
+        painter.setClipRect(QRect(0, 0, obj.width, obj.height))
+        # pen = QPen(QColor(0))
+        # pen.setStyle(Qt.PenStyle.SolidLine)
+        # painter.setPen(pen)
+
+        # linear barcode
+        width = len(obj.data) * obj.bar_width * mm
+        y = x = 0
+        factor = 1
+
+        # calc size
+        if obj.size_mode == SizeMode.NORMAL:
+            pass
+        elif obj.size_mode == SizeMode.ZOOM:
+            factor = obj.width / width
+        elif obj.size_mode == SizeMode.CENTER:
+            x = (obj.width - width) / 2
+
+        for c in obj.data:
+            print('dw', c)
+            if c == '1':
+                painter.fillRect(QRect(x, y, x + factor - 1, obj.height), 0)
+            x += factor
+
         painter.restore()
 
 
