@@ -16,16 +16,14 @@ class Barcode(BandObject):
     _datasource = None
 
     def prepare(self, stream: List, context):
-        from barcode.writer import ImageWriter
         from reptile.runtime import PreparedBarcode, SizeMode, PreparedImage
         from reptile.barcodes import code128
-        img = PreparedImage()
-        img.size_mode = SizeMode.ZOOM
+        img = PreparedBarcode()
+        img.size_mode = SizeMode.STRETCH
         img.left = self.left
         img.top = self.top
         img.height = self.height
         img.width = self.width
-        # img.bar_width = 0.2  # 0.2mm
         if self.barcode_type == 'code128':
             Code = Code128
         elif self.barcode_type == 'ITF-14':
@@ -34,9 +32,7 @@ class Barcode(BandObject):
             if self._datasource:
                 code = context[self.datasource_name][self.field]
                 if code is not None:
-                    # s = BytesIO()
-                    # Code(code, writer=ImageWriter()).write(s, options={'write_text': self.show_text, 'dpi': 300})
-                    img.picture = code128.get_png(code128.get_barcode(code), height=self.height)
+                    img.data = code128.get_barcode(code)
             else:
                 warnings.warn('Datasource not found')
         else:

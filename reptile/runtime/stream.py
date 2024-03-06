@@ -262,10 +262,10 @@ class ReportStream:
 
 
 class PreparedBarcode:
-    __slots__ = ('barcode', 'data', 'left', 'top', 'height', 'width', 'size_mode', 'bar_width')
+    __slots__ = ('barcode', 'data', 'left', 'top', 'height', 'width', 'size_mode', 'thickness')
     data: bytes
     barcode: str
-    bar_width: float
+    thickness: float
 
     def __init__(self):
         self.size_mode = SizeMode.NORMAL
@@ -273,4 +273,4 @@ class PreparedBarcode:
         self.top = 0
         self.height = 0
         self.width = 0
-        self.bar_width = 0.5
+        self.thickness = 3

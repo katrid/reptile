@@ -263,13 +263,15 @@ class ImageRenderer:
         elif obj.size_mode == SizeMode.ZOOM:
             painter.drawPixmap(
                 0, 0,
-                img.scaled(obj.width, obj.height, Qt.AspectRatioMode.IgnoreAspectRatio)
+                img.scaled(obj.width, obj.height, Qt.AspectRatioMode.KeepAspectRatio)
             )
+        elif obj.size_mode == SizeMode.STRETCH:
+            painter.drawPixmap(0, 0, obj.width, obj.height, img)
         elif obj.size_mode == SizeMode.CENTER:
             painter.setClipRect(QRect(0, 0, obj.width, obj.height))
             pt = img.size()
-            x = (obj.width / 2) - (pt.width() / 2)
-            y = (obj.height / 2) - (pt.height() / 2)
+            x = (obj.width - pt.width()) / 2
+            y = (obj.height - pt.height()) / 2
             painter.drawPixmap(x, y, img)
         painter.restore()
 
@@ -291,15 +293,16 @@ class LineRenderer:
 class BarcodeRenderer:
     @classmethod
     def draw(cls, x, y, obj: PreparedBarcode, painter: QPainter):
+        np = QPainter()
+        pm = QPixmap(obj.width, obj.height)
+        np.begin(pm)
         painter.save()
         painter.translate(x + obj.left, y + obj.top)
         painter.setClipRect(QRect(0, 0, obj.width, obj.height))
-        # pen = QPen(QColor(0))
-        # pen.setStyle(Qt.PenStyle.SolidLine)
-        # painter.setPen(pen)
 
         # linear barcode
-        width = len(obj.data) * obj.bar_width * mm
+        data = [int(c) * obj.thickness for c in obj.data]
+        width = sum(data)
         y = x = 0
         factor = 1
 
@@ -311,12 +314,20 @@ class BarcodeRenderer:
         elif obj.size_mode == SizeMode.CENTER:
             x = (obj.width - width) / 2
 
-        for c in obj.data:
-            print('dw', c)
-            if c == '1':
-                painter.fillRect(QRect(x, y, x + factor - 1, obj.height), 0)
-            x += factor
+        d = True
+        painter.fillRect(QRect(0, 0, obj.width, obj.height), Qt.GlobalColor.white)
+        pen = QPen()
+        pen.setStyle(Qt.PenStyle.NoPen)
+        np.setPen(pen)
+        for i, c in enumerate(data):
+            c *= factor
+            if d:
+                painter.fillRect(QRectF(x, y, c, obj.height), Qt.GlobalColor.black)
+            d = not d
+            x += c
 
+        np.end()
+        # painter.drawPixmap(0, 0, pm)
         painter.restore()
 
 
