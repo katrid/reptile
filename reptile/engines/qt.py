@@ -1,13 +1,10 @@
 import os
-from typing import List, Optional
 from PySide6.QtGui import QPageSize, QTextDocument, QFont, Qt, QPainter, QPixmap, QFontMetrics, QPen, QColor, QFontDatabase
 from PySide6.QtCore import QSize, QRectF, QRect, QLine, QPoint, Qt as QtCore
-from PySide6.QtWidgets import QLabel
 
 from reptile.runtime.stream import (
     PreparedText, PreparedPage, PreparedBand, PreparedImage, PreparedLine, SizeMode, PreparedBarcode,
 )
-from reptile.core.units import mm
 
 
 TAG_REGISTRY = {}
@@ -252,7 +249,6 @@ class TextRenderer:
 class ImageRenderer:
     @classmethod
     def draw(cls, x, y, obj: PreparedImage, painter: QPainter):
-        from PySide6.QtGui import Qt
         img = QPixmap()
         img.loadFromData(obj.picture)
         painter.save()
@@ -309,7 +305,7 @@ class BarcodeRenderer:
         # calc size
         if obj.size_mode == SizeMode.NORMAL:
             pass
-        elif obj.size_mode == SizeMode.ZOOM:
+        elif obj.size_mode == SizeMode.ZOOM or obj.size_mode == SizeMode.STRETCH:
             factor = obj.width / width
         elif obj.size_mode == SizeMode.CENTER:
             x = (obj.width - width) / 2
