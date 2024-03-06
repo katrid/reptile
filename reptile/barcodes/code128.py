@@ -4,9 +4,6 @@ from textwrap import wrap
 
 from reptile.core.units import mm
 
-SET_A = 0
-SET_B = 1
-SET_C = 2
 
 SHIFT = 98
 START_A = 103
@@ -15,18 +12,6 @@ START_C = 105
 MODULO = 103
 STOP = 106
 FNC1 = 207
-
-SET_BY_CODE = {
-    START_A: SET_A,
-    START_B: SET_B,
-    START_C: SET_C,
-}
-
-SWAP = {
-    101: SET_A,
-    100: SET_B,
-    99: SET_C,
-}
 
 TO_A = 101
 TO_B = 100
@@ -96,9 +81,7 @@ def get_png(barcode: str, thickness=3, width: int = None, height: int = 150) -> 
     else:
         w = sum(barcode)
         lw = width / w
-        print('w', w, width)
         width = int(w * lw) + 1
-        print(width)
     # width += 20
     img = Image.new('1', (int(width), int(height)), 1)
     draw = ImageDraw.Draw(img)
