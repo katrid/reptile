@@ -18,26 +18,26 @@ class Barcode(BandObject):
     def prepare(self, stream: List, context):
         from reptile.runtime import PreparedBarcode, SizeMode, PreparedImage
         from reptile.barcodes import code128
-        img = PreparedBarcode()
-        img.size_mode = SizeMode.STRETCH
-        img.left = self.left
-        img.top = self.top
-        img.height = self.height
-        img.width = self.width
-        if self.barcode_type == 'code128':
-            Code = Code128
-        elif self.barcode_type == 'ITF-14':
-            Code = ITF
+
+        code = None
         if self.field:
             if self._datasource:
                 code = context[self.datasource_name][self.field]
-                if code is not None:
-                    img.data = code128.get_barcode(code)
             else:
                 warnings.warn('Datasource not found')
-        else:
-            img.data = Code(self.code).encoded
-        stream.append(img)
+
+        if code:
+            img = PreparedBarcode()
+            img.size_mode = SizeMode.STRETCH
+            img.left = self.left
+            img.top = self.top
+            img.height = self.height
+            img.width = self.width
+            if self.barcode_type == 'code128':
+                img.data = code128.get_barcode(code)
+            elif self.barcode_type == 'ITF-14':
+                pass
+            stream.append(img)
 
     @property
     def datasource_name(self):
