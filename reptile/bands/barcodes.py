@@ -3,7 +3,7 @@ from io import BytesIO
 from typing import List
 
 from barcode import Code128, ITF
-from barcode.writer import SVGWriter
+from barcode.writer import SVGWriter, ImageWriter
 
 from reptile.bands.widgets import BandObject, TAG_REGISTRY
 
@@ -27,7 +27,7 @@ class Barcode(BandObject):
                 warnings.warn('Datasource not found')
 
         if code:
-            img = PreparedBarcode()
+            img = PreparedBarcode() if self.barcode_type == 'code128' else PreparedImage()
             img.size_mode = SizeMode.STRETCH
             img.left = self.left
             img.top = self.top
@@ -36,7 +36,10 @@ class Barcode(BandObject):
             if self.barcode_type == 'code128':
                 img.data = code128.get_barcode(code)
             elif self.barcode_type == 'ITF-14':
-                pass
+                s = BytesIO()
+                ITF(code, writer=ImageWriter()).write(s, options={'write_text': False, 'quiet_zone': 5})
+                s.seek(0)
+                img.picture = s.read()
             stream.append(img)
 
     @property

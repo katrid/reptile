@@ -108,6 +108,7 @@ class Text(BandObject):
         border = structure.get('border')
         if border:
             self.border.width = border.get('width', 0.5)
+            self.border.style = border.get('style', 1)
             if border.get('all'):
                 self.border.bottom = self.border.left = self.border.top = self.border.right = True
             else:
@@ -251,6 +252,8 @@ class Image(BandObject):
             self.size_mode = SizeMode.CENTER
         elif size_mode == 'zoom':
             self.size_mode = SizeMode.ZOOM
+        elif size_mode == 'stretch':
+            self.size_mode = SizeMode.STRETCH
         else:
             self.size_mode = SizeMode.NORMAL
 
