@@ -228,7 +228,7 @@ class TextRenderer:
                 # painter.restore()
             if self.border and self.border.color is not None:
                 painter.setBrush(Qt.BrushStyle.SolidPattern)
-                pen = QPen(QColor(self.border.color), self.border.width, pen_style_map.get(self.border.style, Qt.PenStyle.SolidLine))
+                pen = QPen(QColor(self.border.color), self.border.width, pen_style_map.get(self.border.style, pen_style_map.get(self.border.style)))
                 painter.setPen(pen)
                 painter.drawLines(cls.getLines(self, self.left + x, self.top + y, self.left + self.width + x, self.top + y + self.height))
 
