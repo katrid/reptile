@@ -1,3 +1,5 @@
+import tempfile
+
 from PySide6.QtGui import QPainter, QFont, QGuiApplication, QPageSize, QPageLayout, QPdfWriter, QPen, QColor
 from PySide6.QtPrintSupport import QPrinter
 from PySide6.QtCore import QMarginsF, QSizeF, QSize, QPoint
@@ -19,7 +21,7 @@ class PDF:
         self.painter = None
         self._isFirstPage = False
 
-    def export(self, filename):
+    def export(self, filename) -> bytes:
         self.printer = QPdfWriter(filename)
         self.printer.setPageMargins(QMarginsF(0, 0, 0, 0))
         self.printer.setResolution(96)
@@ -32,13 +34,17 @@ class PDF:
         self.painter.begin(self.printer)
         self._isFirstPage = True
         for page in pages:
-            if watermark := getattr(page, 'watermark'):
-                self.draw_watermark(watermark, page)
             self.exportPage(page)
             self._isFirstPage = False
         self.painter.end()
         del self.painter
         del self.printer
+
+    def export_bytes(self):
+        with tempfile.NamedTemporaryFile(suffix='.pdf') as tmp:
+            self.export(tmp.name)
+            b = tmp.read()
+            return b
 
     def draw_watermark(self, wm, page):
         self.painter.save()
@@ -48,11 +54,12 @@ class PDF:
         self.painter.setOpacity(wm.get('opacity', .3))
         self.painter.drawText(QPoint(page.width - self.painter.fontMetrics().horizontalAdvance(wm.get('text')) - (page.x * 1.5), page.height/2), wm.get('text'))
         self.painter.restore()
-        self.painter.save()
 
     def exportPage(self, page):
         if not self._isFirstPage:
             self.printer.newPage()
+        if watermark := getattr(page, 'watermark'):
+            self.draw_watermark(watermark, page)
         for band in page.bands:
             self.exportBand(band)
 

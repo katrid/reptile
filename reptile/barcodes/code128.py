@@ -37,7 +37,6 @@ UNTIL_C = re.compile(r"\d{4}")
 
 def encode(data: str):
     pos = 0
-    length = len(data)
     lst = []
     c = None
     s = None
@@ -82,7 +81,6 @@ def get_png(barcode: str, thickness=3, width: int = None, height: int = 150) -> 
         w = sum(barcode)
         lw = width / w
         width = int(w * lw) + 1
-    # width += 20
     img = Image.new('1', (int(width), int(height)), 1)
     draw = ImageDraw.Draw(img)
 
