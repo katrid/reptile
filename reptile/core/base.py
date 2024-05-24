@@ -11,7 +11,7 @@ ERROR_TEXT = '-'
 
 
 class Font:
-    __slots__ = ('name', 'size', 'bold', 'italic', 'underline')
+    __slots__ = ('name', 'size', 'bold', 'italic', 'underline', 'color')
 
     def __init__(self):
         self.name: Optional[str] = None
@@ -19,6 +19,7 @@ class Font:
         self.italic = False
         self.bold = False
         self.underline = False
+        self.color = '#000000'
 
     def __bool__(self):
         return bool(self.name)

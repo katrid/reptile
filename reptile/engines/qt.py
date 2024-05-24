@@ -167,16 +167,26 @@ class TextRenderer:
     def textFlags(cls, self: PreparedText):
         ww = Qt.TextWordWrap if self.wrap else 0
         return h_align_map.get(self.halign, 0) | v_align_map.get(self.valign, 0) | ww
-    
+
     @classmethod
     def draw_qr_code(cls, x, y, self: PreparedText, painter: QPainter):
         # TEMPORÁRIO: utilizacao da lib qrcode
         import qrcode
         qr = qrcode.make(self.text)
-        filepath = os.path.join(os.path.dirname(os.path.dirname((os.path.dirname(__file__)))), 'tmp', f'{self.text.replace("/", "")}.png')
+        filepath = os.path.join(
+            os.path.dirname(os.path.dirname((os.path.dirname(__file__)))),
+            "tmp",
+            f'{self.text.replace("/", "")}.png',
+        )
         qr.save(filepath)
         img = QPixmap(filepath)
-        painter.drawPixmap(x + self.left, y + self.top, img.scaled(self.width, self.height, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        painter.drawPixmap(
+            x + self.left,
+            y + self.top,
+            img.scaled(
+                self.width, self.height, Qt.KeepAspectRatio, Qt.SmoothTransformation
+            ),
+        )
         # remove qrcode file
         os.remove(filepath)
 
@@ -192,6 +202,9 @@ class TextRenderer:
                     font.setBold(True)
                 if self.font_italic:
                     font.setItalic(True)
+            if self.color:
+                color = QColor(self.color)
+                painter.setPen(color)
             brushStyle = self.brush_style or 1
             w = self.width
             h = self.height

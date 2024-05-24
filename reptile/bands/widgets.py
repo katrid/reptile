@@ -91,6 +91,8 @@ class Text(BandObject):
                 self.font.italic = True
             if f.get('underline'):
                 self.font.underline = True
+            if color := f.get('color'):
+                self.font.color = color
         valign = structure.get('vAlign')
         halign = structure.get('hAlign')
         self.word_wrap = structure.get('wrap', False)
@@ -176,6 +178,8 @@ class Text(BandObject):
         new_obj.font_name = self.font.name
         if self.font.size:
             new_obj.font_size = self.font.size
+        if self.font.color:
+            new_obj.color = self.font.color
         new_obj.font_bold = self.font.bold
         new_obj.font_italic = self.font.italic
         new_obj.background = self.background
