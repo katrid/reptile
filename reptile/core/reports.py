@@ -51,6 +51,9 @@ class Report:
             self.add_page(page)
             page.load(p, rep.get('watermark'))
 
+    def set_data(self, name: str, data):
+        self.get_datasource(name)._data = data
+
     def __getitem__(self, item):
         for page in self.pages:
             if page.name == item:

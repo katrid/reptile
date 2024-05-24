@@ -6,8 +6,7 @@ from PySide6.QtGui import QPainter, QGuiApplication, QFont, QPageSize, QPageLayo
 from PySide6.QtCore import QMarginsF, QSizeF, QSize, QCoreApplication
 from PySide6.QtWidgets import QApplication
 from reptile.bands import Report, DataBand, DataSource, Text
-import skia
-# from reptile.exports import pdf
+from reptile.exports import pdf
 
 
 class EngineTestCase(TestCase):
@@ -23,15 +22,6 @@ class EngineTestCase(TestCase):
                 painter.setFont(QFont('Verdana', 9))
                 painter.drawText(i, 10, 'test report')
             painter.end()
-
-    def _test_skia(self):
-        for i in range(1000):
-            file = skia.FILEWStream('test.pdf')
-            paint = skia.Paint()
-            with skia.PDF.MakeDocument(file) as pdf:
-                page = pdf.beginPage(400, 600)
-                page.drawTextBlob(skia.TextBlob('test', skia.Font(None, 18)), 1.0, 1.0, paint)
-                pdf.endPage()
 
     def _test_dict_datasource(self):
         rep = Report()
