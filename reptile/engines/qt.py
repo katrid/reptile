@@ -5,9 +5,31 @@ from PySide6.QtCore import QSize, QRectF, QRect, QLine, QPoint, Qt as QtCore
 from reptile.runtime.stream import (
     PreparedText, PreparedPage, PreparedBand, PreparedImage, PreparedLine, SizeMode, PreparedBarcode,
 )
+from reptile.bands.widgets import Text
 
 
 TAG_REGISTRY = {}
+
+
+def calc_text_size(self, obj: PreparedText):
+    from PySide6.QtGui import QFont, QFontMetrics
+    from PySide6.QtCore import Qt
+    font = QFont(obj.font_name)
+    if obj.font_size:
+        font.setPointSizeF(obj.font_size)
+    if obj.font_bold:
+        font.setBold(True)
+    if obj.font_italic:
+        font.setItalic(True)
+    fm = QFontMetrics(font)
+    flags = 0 | 0 | Qt.TextWordWrap
+    r = fm.boundingRect(0, 0, obj.width, 0, flags, obj.text)
+    height = r.height() + 4
+    del font
+    del fm
+    return obj.width, height
+
+Text.calc_size = calc_text_size
 
 
 class PreparedWidget:
