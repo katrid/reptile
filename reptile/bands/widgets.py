@@ -64,13 +64,31 @@ class Text(BandObject):
     # datasource: DataSource = None
     text: Optional[str] = None
     display_format: DisplayFormat = None
-    calc_size = None
+    # calc_size = None
 
     def __init__(self, text: str = None):
         super().__init__()
         self.font = Font()
         self.border = Border()
         self.text = text
+
+    def calc_size(self, obj: PreparedText):
+        from PySide6.QtGui import QFont, QFontMetrics
+        from PySide6.QtCore import Qt
+        font = QFont(obj.font_name)
+        if obj.font_size:
+            font.setPointSizeF(obj.font_size)
+        if obj.font_bold:
+            font.setBold(True)
+        if obj.font_italic:
+            font.setItalic(True)
+        fm = QFontMetrics(font)
+        flags = 0 | 0 | Qt.TextWordWrap
+        r = fm.boundingRect(0, 0, obj.width, 0, flags, obj.text)
+        height = r.height() + 4
+        del font
+        del fm
+        return obj.width, height
 
     def load(self, structure: dict):
         super().load(structure)
@@ -95,6 +113,7 @@ class Text(BandObject):
                 self.font.color = color
         valign = structure.get('vAlign')
         halign = structure.get('hAlign')
+        self.can_grow = structure.get('canGrow')
         self.word_wrap = structure.get('wrap', False)
         self.qrcode = structure.get('qrCode', False)
 
@@ -192,7 +211,8 @@ class Text(BandObject):
         new_obj.border = self.border
         new_obj.wrap = self.word_wrap
         new_obj.qrcode = self.qrcode
-        if (self.can_grow or self.can_shrink) and level > 1 and self.calc_size:
+        new_obj.can_grow = self.can_grow
+        if (self.can_grow or self.can_shrink) and level > 1:
             w, h = self.calc_size(new_obj)
             if self.can_shrink:
                 new_obj.can_shrink = True
