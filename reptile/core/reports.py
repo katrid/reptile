@@ -3,6 +3,7 @@ import datetime
 from pathlib import Path
 from enum import Enum
 import json
+from decimal import Decimal
 
 import reptile
 from reptile import EnvironmentSettings
