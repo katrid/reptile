@@ -198,7 +198,12 @@ class Band(ReportObject):
         if self.page.report._level > 1 and int(band.bottom) > int(page.ay):
             page = self.page.new_page(context)
             band.set_page(page)
-        page.bands.append(band)
+        if not (
+            (band.band_type == "GroupHeader")
+            and band.objects
+            and (band.bottom + band.objects[0].height + band.objects[0].top) > page.ay
+        ):
+            page.bands.append(band)
         page.y = band.bottom
         # save position
         self._x = band.left
