@@ -181,10 +181,47 @@ class Band(ReportObject):
             self.prepare_subreports(page, context)
         return page
 
+    def fits_on_page(self, band: PreparedBand, page: PreparedPage):
+        """
+        Tells if some object fits on the current page.
+
+        :param band: _description_
+        :type band: PreparedBand
+        :param page: _description_
+        :type page: PreparedPage
+        :return: _description_
+        :rtype: _type_
+        """
+        # add verifications for another types of objects if needed.
+        if ((band.band_type == "GroupHeader")
+            and band.objects
+            and (band.bottom + band.objects[0].height + band.objects[0].top) > page.ay
+        ):
+            return False
+        return True
+
+    def is_on_page(self, page: PreparedPage) -> bool:
+        """
+        Tells if some object is already added to the stream of prepared
+        objects on the page.
+
+        :param page: _description_
+        :type page: PreparedPage
+        :return: _description_
+        :rtype: bool
+        """
+        # check if there's need to verify another types of objects
+        # for now, only GroupHeader was needed.
+        if self.band_type == 'GroupHeader' and page.bands:
+            if any([b.group == self._context['group'] for b in page.bands]):
+                return True
+        return False
+
     def prepare_objects(self, page: PreparedPage, context):
         context = self._context = context or self.page._context
         band = PreparedBand()
         band.band_type = self.band_type
+        band.group = context.get('group')
         objs = band.objects = []
         band.height = self.height
         band.width = self.width
@@ -198,16 +235,20 @@ class Band(ReportObject):
         if self.page.report._level > 1 and int(band.bottom) > int(page.ay):
             page = self.page.new_page(context)
             band.set_page(page)
-        if not (
-            (band.band_type == "GroupHeader")
-            and band.objects
-            and (band.bottom + band.objects[0].height + band.objects[0].top) > page.ay
-        ):
+
+        if self.is_on_page(page):
+            return page
+
+        if self.fits_on_page(band, page):
             page.bands.append(band)
-        page.y = band.bottom
-        # save position
-        self._x = band.left
-        self._y = band.top
+            page.y = band.bottom
+            # save position
+            self._x = band.left
+            self._y = band.top
+        else:
+            page = self.page.new_page(context)
+            band.set_page(page)
+
         return page
 
     def prepare_subreports(self, page: PreparedPage, context):
@@ -476,7 +517,8 @@ class GroupHeader(Band):
             context['group'] = group
             context[datasource_name] = lst
             page = super().prepare(page, context)
-
+            if grouper == '27-ARGAAZULTH11':
+                pass
             for child in self.children:
                 if datasource_name:
                     context[datasource.name] = lst
