@@ -517,8 +517,6 @@ class GroupHeader(Band):
             context['group'] = group
             context[datasource_name] = lst
             page = super().prepare(page, context)
-            if grouper == '27-ARGAAZULTH11':
-                pass
             for child in self.children:
                 if datasource_name:
                     context[datasource.name] = lst
