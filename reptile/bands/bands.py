@@ -144,7 +144,6 @@ class Band(ReportObject):
     band_type = 'band'
     auto_height = False
     _x = _y = 0
-    _page: PreparedPage = None
 
     def __init__(self, page: Page=None):
         if page:

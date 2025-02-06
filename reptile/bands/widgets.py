@@ -32,8 +32,8 @@ class BandObject(ReportObject):
 
     def load(self, structure: dict):
         self.name = structure['name']
-        self.left = structure.get('left')
-        self.top = structure.get('top')
+        self.left = structure.get('x', structure.get('left'))
+        self.top = structure.get('y', structure.get('top'))
         self.height = structure.get('height')
         self.width = structure.get('width')
 
@@ -334,4 +334,6 @@ class Table(BandObject):
 
 
 TAG_REGISTRY['text'] = Text
+TAG_REGISTRY['Text'] = Text
 TAG_REGISTRY['image'] = Image
+TAG_REGISTRY['Image'] = Image
