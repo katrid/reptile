@@ -35,6 +35,34 @@ CODE128C = re.compile(r"(\xCF*[0-9]{2}\xCF*)*")
 UNTIL_C = re.compile(r"\d{4}")
 
 
+def encode_c(data: str):
+    pos = 0
+    lst = []
+    c = None
+    s = None
+    while data:
+        if (s := CODE128C.match(data)) and (s := s[0]) and (c is None or len(s) >= 4):
+            lst.append(START_C if c is None else TO_C)
+            c = CODE128C
+            lst.extend(int(b) for b in wrap(s, 2))
+        elif (s := CODE128B.match(data)) and (s := s[0]):
+            lst.append(START_B if c is None else TO_B)
+            c = CODE128B
+            if sc := UNTIL_C.search(s):
+                s = s[:sc.regs[0][0]]
+            lst.extend(ord(b) - 32 for b in s)
+        elif (s := CODE128A.match(data)) and (s := s[0]):
+            lst.append(START_A if c is None else TO_A)
+            c = CODE128A
+            if sc := UNTIL_C.search(s):
+                s = s[:sc.regs[0][0]]
+            lst.extend(o + 64 if (o := ord(b)) < 32 else o - 32 for b in s)
+        else:
+            raise ValueError(f"Invalid char at position: {pos}")
+        data = data[len(s):]
+    return lst
+
+
 def encode(data: str):
     pos = 0
     lst = []

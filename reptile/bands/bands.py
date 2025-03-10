@@ -1,4 +1,4 @@
-from typing import List, Optional, Iterable
+from typing import List, Optional, Iterable, TypedDict
 from functools import partial
 from itertools import groupby
 from collections import defaultdict
@@ -33,13 +33,24 @@ class Page(BasePage):
         self.width = 210 * mm
         self.callbacks = []
         self.bands: List['Band'] = []
-        self.margin = Margin()
+        self.margins = Margin()
+        self._page_size = None
+        self.orientation = 'portrait'
+
+    @property
+    def margin(self):
+        return self.margins
+
+    @margin.setter
+    def margin(self, value):
+        self.margins = value
 
     def load(self, structure: dict, watermark=None):
         self.height = structure.get('height', self.height)
         self.width = structure.get('width', self.width)
         self.watermark = watermark
         self._pending_operations = defaultdict(list)
+        self.orientation = structure.get('orientation', self.orientation)
         bands = {}
         for b in structure['bands']:
             band = TAG_REGISTRY[b['type']]()
@@ -49,6 +60,23 @@ class Page(BasePage):
         for pend, funcs in self._pending_operations.items():
             for fn in funcs:
                 fn(bands[pend])
+
+    def find_band(self, name: str):
+        for band in self.bands:
+            if band.name == name:
+                return band
+
+    def dump(self) -> dict:
+        return {
+            'type': 'banded',
+            'height': self.height,
+            'width': self.width,
+            'name': self.name,
+            'margins': self.margins.dump(),
+            'bands': [band.dump() for band in self.bands],
+            'pageSize': self._page_size,
+            'orientation': self.orientation,
+        }
 
     def add_band(self, band: 'Band'):
         if band.page != self:
@@ -141,26 +169,39 @@ class Band(ReportObject):
     _page: Page = None
     _parent: 'Band' = None
     _context: dict = None
-    band_type = 'band'
+    band_type = 'Band'
     auto_height = False
+    child_band: 'ChildBand' = None
     _x = _y = 0
 
     def __init__(self, page: Page=None):
         if page:
             self.page = page
             self.report = page.report
-        self.objects: List['ReportElement'] = []
+        self.objects: List['ReportObject'] = []
         self.children: List['Band'] = []
         self.subreports: List['SubReport'] = []
 
-    def load(self, structure: dict):
-        self.height = structure.get('height', self.height)
-        self.width = structure.get('width', self.width or (self._page and self._page.width))
-        self.name = structure.get('name')
-        for obj in structure['objects']:
+    def load(self, data: dict):
+        self.height = data.get('height', self.height)
+        self.width = data.get('width', self.width or (self._page and self._page.width))
+        self.name = data.get('name')
+        if child_band := data.get('childBand'):
+            self.page._pending_operations[child_band].append(partial(setattr, self, 'child_band'))
+
+        for obj in data['objects']:
             widget = TAG_REGISTRY[obj['type']]()
             self.add_object(widget)
             widget.load(obj)
+
+    def dump(self) -> dict:
+        return {
+            'type': self.band_type,
+            'height': self.height,
+            'width': self.width,
+            'name': self.name,
+            'objects': [obj.dump() for obj in self.objects],
+        }
 
     def add_band(self, band: 'Band'):
         band.parent = self
@@ -252,11 +293,11 @@ class PageFooter(Band):
 
 
 class FooterBand(Band):
-    band_type = 'Footer'
+    band_type = 'FooterBand'
 
 
 class HeaderBand(Band):
-    band_type = 'Header'
+    band_type = 'HeaderBand'
 
 
 class ReportSummary(Band):
@@ -280,7 +321,9 @@ class RecordHelper:
         self._rec = rec
 
     def __getattr__(self, item):
-        return self._rec[item]
+        if isinstance(self._rec, dict):
+            return self._rec[item]
+        return getattr(self._rec, item)
 
     def __getitem__(self, item):
         return self._rec[item]
@@ -321,12 +364,16 @@ class DataProxy:
         return len(self.data)
 
 
+class ChildBand(Band):
+    pass
+
+
 class DataBand(Band):
-    band_type = 'data'
+    band_type = 'DataBand'
     _datasource: DataSource = None
     row_count: int = None
     header: 'HeaderBand' = None
-    footer: 'Footer' = None
+    footer: 'FooterBand' = None
     group_header: 'GroupHeader' = None
 
     def load(self, structure: dict):
@@ -338,6 +385,16 @@ class DataBand(Band):
             self.page._pending_operations[name].append(partial(setattr, self, 'header'))
         if name := structure.get('footer'):
             self.page._pending_operations[name].append(partial(setattr, self, 'footer'))
+
+    def dump(self) -> dict:
+        return {
+            **super().dump(),
+            'datasource': self.datasource,
+            # 'row_count': self.row_count,
+            'header': self.header.name if self.header else None,
+            'footer': self.footer.name if self.footer else None,
+            # 'group_header': self.group_header.dump() if self.group_header else None,
+        }
 
     def prepare(self, page: PreparedPage, context):
         data = self.data
@@ -354,7 +411,7 @@ class DataBand(Band):
 
         self._context = context
         for i, row in enumerate(data):
-            row = RecordHelper(row)
+            row = RecordHelper(row) if isinstance(row, dict) else row
             if self.datasource and self.datasource.name:
                 context[self.datasource.name] = row
             context['record'] = row
@@ -510,4 +567,5 @@ TAG_REGISTRY = {
     'PageFooter': PageFooter,
     'PageHeader': PageHeader,
     'DataBand': DataBand,
+    'ChildBand': DataBand,
 }

@@ -4,13 +4,13 @@ from reptile.core import ReportObject, Report
 
 
 class DataSource(ReportObject):
-    _data: Optional[Iterable] = None
+    _data = None
     _opened = False
     _report = None
     connection = None
     name: str = None
 
-    def __init__(self, data: Iterable = None, name: str = None):
+    def __init__(self, data = None, name: str = None):
         self._data = data
         self.name = name
 
@@ -22,7 +22,7 @@ class DataSource(ReportObject):
         self._opened = False
 
     @property
-    def data(self) -> Iterable:
+    def data(self):
         if not self._opened:
             self.open()
         return self._data
@@ -33,3 +33,7 @@ class DataSource(ReportObject):
         self._report = value
         if value:
             value.datasources.append(self)
+
+
+class SQLDataSource(DataSource):
+    sql: str = None

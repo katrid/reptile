@@ -1,4 +1,4 @@
-from typing import List, TYPE_CHECKING, Iterable, Optional
+from typing import List, TYPE_CHECKING, Iterable, Optional, TypedDict
 import datetime
 from pathlib import Path
 from enum import Enum
@@ -10,6 +10,9 @@ from reptile import EnvironmentSettings
 from reptile.core.base import ReportObject, Margin, BasePage
 from reptile.runtime import ReportStream, PreparedPage
 from reptile.core.units import mm
+if TYPE_CHECKING:
+    from reptile.data.base import DataSource
+
 
 class ReportType(Enum):
     AUTO = 0
@@ -32,6 +35,7 @@ class Report:
         # self.totals: List[Total] = []
         self.variables = {}
         self.objects = []
+        self.context = {}
         # default database connection
         self.connection = default_connection
         self._context = None
@@ -51,6 +55,14 @@ class Report:
             page = Page()
             self.add_page(page)
             page.load(p, rep.get('watermark'))
+
+    def dump(self) -> dict:
+        return {
+            'report': {
+                'datasources': [ds.dump() for ds in self.datasources],
+                'pages': [p.dump() for p in self.pages]
+            }
+        }
 
     def set_data(self, name: str, data):
         self.get_datasource(name)._data = data
@@ -84,6 +96,7 @@ class Report:
             'time': datetime.datetime.now().strftime('%H:%M'),
             'params': self.variables,
         }
+        self._context.update(self.context)
         # detect subreports
         # for obj in self.objects:
         #     if isinstance(obj, SubReport):
@@ -93,7 +106,9 @@ class Report:
             if ds.name and hasattr(ds, 'params'):
                 ds.params.assign(self.variables)
                 ds.open(self.variables)
-            self._context[ds.name] = DataProxy(ds.data)
+            # init data context
+            data = ds.data
+            self._context[ds.name] = data if isinstance(data, dict) else DataProxy(data)
 
         for page in self.pages:
             if not page.subreport:
@@ -228,6 +243,9 @@ class DataProxy:
 
     def __getattr__(self, item):
         if self.data and isinstance(self.data, list):
+            obj = self.data[0]
+            if hasattr(obj, item):
+                return getattr(obj, item)
             return self.data[0][item]
 
     def values(self, item):

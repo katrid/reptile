@@ -19,10 +19,27 @@ class Font:
         self.italic = False
         self.bold = False
         self.underline = False
-        self.color = '#000000'
+        self.color = 0
 
     def __bool__(self):
         return bool(self.name)
+
+    def dump(self) -> dict | None:
+        if self:
+            res = {
+                'name': self.name,
+            }
+            if self.size:
+                res['size'] = self.size
+            if self.bold:
+                res['bold'] = self.bold
+            if self.italic:
+                res['italic'] = self.italic
+            if self.underline:
+                res['underline'] = self.underline
+            if self.color:
+                res['color'] = self.color
+            return res
 
 
 class Border:
@@ -39,6 +56,18 @@ class Border:
 
     def __bool__(self):
         return self.left or self.top or self.right or self.bottom
+
+    def dump(self) -> dict | None:
+        if self:
+            return {
+                'left': self.left,
+                'top': self.top,
+                'right': self.right,
+                'bottom': self.bottom,
+                'width': self.width,
+                'color': self.color,
+                'style': self.style,
+            }
 
 
 class ReportObject:
@@ -59,6 +88,12 @@ class DisplayFormat:
     def update_format(self):
         if self.kind == 'Numeric':
             self.decimal_pos = _re_number_fmt.match(self.format)
+
+    def dump(self) -> dict:
+        return {
+            'format': self.format,
+            'kind': self.kind,
+        }
 
 
 class Highlight:
@@ -88,6 +123,28 @@ class Highlight:
         return self._template.render(**context).strip() == 'True'
 
 
+class Padding:
+    __slots__ = ('left', 'top', 'right', 'bottom')
+
+    def __init__(self, left=0, top=0, right=0, bottom=0):
+        self.left = left
+        self.top = top
+        self.right = right
+        self.bottom = bottom
+
+    def __bool__(self):
+        return bool(self.left or self.top or self.right or self.bottom)
+
+    def dump(self) -> dict | None:
+        if self:
+            return {
+                'left': self.left,
+                'top': self.top,
+                'right': self.right,
+                'bottom': self.bottom,
+            }
+
+
 class Margin:
     __slots__ = ('left', 'top', 'right', 'bottom')
 
@@ -100,5 +157,3 @@ class Margin:
 
 class BasePage(ReportObject):
     pass
-
-

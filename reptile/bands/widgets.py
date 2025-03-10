@@ -1,11 +1,12 @@
 from typing import Optional, List, TYPE_CHECKING
+import enum
 import logging
 
 from jinja2 import Template
 
 from reptile import EnvironmentSettings
 from reptile.core import (
-    ReportObject, Font, Border, DisplayFormat, Highlight,
+    ReportObject, Font, Border, DisplayFormat, Highlight, Padding
 )
 from reptile.runtime import PreparedText
 from reptile.data import DataSource
@@ -31,14 +32,28 @@ class BandObject(ReportObject):
         return obj
 
     def load(self, structure: dict):
-        self.name = structure['name']
+        self.name = structure.get('name')
         self.left = structure.get('x', structure.get('left'))
         self.top = structure.get('y', structure.get('top'))
         self.height = structure.get('height')
         self.width = structure.get('width')
 
 
+class VAlign(enum.IntEnum):
+    TOP = 0
+    CENTER = 1
+    BOTTOM = 2
+
+
+class HAlign(enum.IntEnum):
+    LEFT = 0
+    CENTER = 1
+    RIGHT = 2
+    JUSTIFY = 3
+
+
 class Text(BandObject):
+    DEFAULT_PADDING = {'top': 1, 'right': 2, 'bottom': 1, 'left': 2}
     tag_name = 'text'
     _field: str = None
     _template: Template = None
@@ -49,11 +64,11 @@ class Text(BandObject):
     can_grow = False
     can_shrink = False
     font: Font = None
-    halign: str = None
-    valign: str = None
+    halign: HAlign = HAlign.LEFT
+    valign: VAlign = VAlign.TOP
     border: Border = None
     word_wrap = False
-    qrcode: bool = False
+    padding: Padding
     top = 0
     left = 0
     width = 120
@@ -65,12 +80,18 @@ class Text(BandObject):
     text: Optional[str] = None
     display_format: DisplayFormat = None
     calc_size = None
+    highlight: Highlight = None
 
     def __init__(self, text: str = None):
         super().__init__()
+        self.padding = Padding(**self.DEFAULT_PADDING)
         self.font = Font()
         self.border = Border()
         self.text = text
+
+    @staticmethod
+    def get_type():
+        return 'Text'
 
     def load(self, structure: dict):
         super().load(structure)
@@ -93,25 +114,18 @@ class Text(BandObject):
                 self.font.underline = True
             if color := f.get('color'):
                 self.font.color = color
-        valign = structure.get('vAlign')
-        halign = structure.get('hAlign')
+        self.valign = structure.get('vAlign', self.valign)
+        self.halign = structure.get('hAlign', self.halign)
         self.can_grow = structure.get('canGrow')
         self.word_wrap = structure.get('wrap', False)
-        self.qrcode = structure.get('qrCode', False)
-
-        if valign == 1:
-            self.valign = 'center'
-        elif valign == 2:
-            self.valign = 'bottom'
-        if halign == 1:
-            self.halign = 'center'
-        elif halign == 2:
-            self.halign = 'right'
+        if padding := structure.get('padding'):
+            self.padding = Padding(**padding)
 
         border = structure.get('border')
         if border:
-            self.border.width = border.get('width', 0.5)
+            self.border.width = border.get('width', 1)
             self.border.style = border.get('style', 1)
+            self.border.color = border.get('color', 0x000000)
             if border.get('all'):
                 self.border.bottom = self.border.left = self.border.top = self.border.right = True
             else:
@@ -130,14 +144,36 @@ class Text(BandObject):
 
         disp_fmt = structure.get('displayFormat')
         if disp_fmt:
-            self.display_format = DisplayFormat(disp_fmt['format'], disp_fmt['type'])
+            self.display_format = DisplayFormat(disp_fmt['format'], disp_fmt.get('kind'))
         highlight = structure.get('highlights')
         if highlight:
             self.highlight = Highlight(highlight[0])
         else:
             self.highlight = Highlight(structure.get('highlight'))
 
-    highlight: Highlight = None
+    def dump(self) -> dict:
+        padding = self.padding.dump()
+        if padding == self.DEFAULT_PADDING:
+            padding = None
+        return {k: v for k, v in {
+            'type': self.get_type(),
+            'name': self.name,
+            'text': self.text,
+            'font': self.font.dump(),
+            'vAlign': self.valign,
+            'hAlign': self.halign,
+            'canGrow': self.can_grow,
+            'wrap': self.word_wrap,
+            'allowTags': self.allow_tags,
+            'border': (self.border and self.border.dump()) or None,
+            'displayFormat': self.display_format and self.display_format.dump(),
+            'background': self.background,
+            'width': self.width,
+            'height': self.height,
+            'x': self.left,
+            'y': self.top,
+            'padding': padding,
+        }.items()}
 
     @property
     def field(self):
@@ -164,6 +200,7 @@ class Text(BandObject):
         new_obj.left = self.left
         new_obj.top = self.top
         new_obj.allow_tags = self.allow_tags
+        new_obj.padding = self.padding
         if self.allow_expressions:
             try:
                 new_obj.text = self.template.render(**context)
@@ -192,7 +229,6 @@ class Text(BandObject):
         new_obj.halign = self.halign
         new_obj.border = self.border
         new_obj.wrap = self.word_wrap
-        new_obj.qrcode = self.qrcode
         new_obj.can_grow = self.can_grow
         if (self.can_grow or self.can_shrink) and level > 1 and self.calc_size:
             w, h = self.calc_size(new_obj)
