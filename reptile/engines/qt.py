@@ -207,11 +207,16 @@ class TextRenderer:
         h = self.height
         tx = self.left + x
         ty = self.top + y
-        if self.border:
-            w -= self.border.width * 2
-            h -= self.border.width * 2
-            tx -= self.border.width * 2
-            # ty += self.border.width
+        border_width = self.border.width - .5 if self.border.width >= 1 else self.border.width
+        if border_width:
+            if self.border.right:
+                w -= self.border.width
+            if self.border.bottom:
+                h -= self.border.width
+            if self.border.left:
+                tx -= self.border.width
+            if self.border.top:
+                ty += self.border.width
         rect = QRectF(tx, ty, w, h)
 
         if self.background:
@@ -221,7 +226,7 @@ class TextRenderer:
         if self.border and self.border.color is not None:
             painter.save()
             painter.setBrush(Qt.BrushStyle.SolidPattern)
-            pen = QPen(QColor(self.border.color), self.border.width / 2, pen_style_map.get(self.border.style, pen_style_map.get(self.border.style)))
+            pen = QPen(QColor(self.border.color), border_width, pen_style_map.get(self.border.style, pen_style_map.get(self.border.style)))
             painter.setPen(pen)
             painter.drawLines(cls.getLines(self, self.left + x, self.top + y, self.left + self.width + x, self.top + y + self.height))
             painter.restore()
@@ -243,8 +248,12 @@ class TextRenderer:
             flags = cls.textFlags(self)
             if self.valign == VAlign.TOP:
                 rect.setY(rect.y() + self.padding.top)
+            elif self.valign == VAlign.BOTTOM:
+                rect.setHeight(rect.height() - self.padding.bottom)
             if self.halign == HAlign.LEFT:
                 rect.setX(rect.x() + self.padding.left)
+            elif self.halign == HAlign.RIGHT:
+                rect.setWidth(rect.width() - self.padding.right)
             painter.drawText(rect, flags, self.text)
             # painter.restore()
 
@@ -288,17 +297,23 @@ class ImageRenderer:
         painter.restore()
 
 
+PEN_STYLE_MAP = {
+    0: Qt.PenStyle.SolidLine,
+    1: Qt.PenStyle.DashLine,
+    2: Qt.PenStyle.DotLine,
+}
+
 class LineRenderer:
     @classmethod
-    def draw(cls, x, y, self, painter: QPainter):
+    def draw(cls, x, y, line, painter: QPainter):
         painter.save()
         pen = QPen(QColor(0))
-        pen.setWidth(self.size)
-        pen.setStyle(Qt.PenStyle.SolidLine)
+        pen.setWidth(line.line_width)
+        pen.setStyle(PEN_STYLE_MAP[line.line_style])
         painter.setPen(pen)
-        tx = self.left + x
-        ty = self.top + y
-        painter.drawLine(QLine(tx, ty, tx + self.width, ty + self.height))
+        tx = line.left + x
+        ty = line.top + y
+        painter.drawLine(QLine(tx, ty, tx + line.width, ty))
         painter.restore()
 
 
