@@ -1,11 +1,11 @@
 from typing import Optional
+import enum
 import re
 
 from jinja2 import Template
 
 from reptile import EnvironmentSettings
 from .units import mm
-
 
 ERROR_TEXT = '-'
 
@@ -14,8 +14,8 @@ class Font:
     __slots__ = ('name', 'size', 'bold', 'italic', 'underline', 'color')
 
     def __init__(self):
-        self.name: Optional[str] = None
-        self.size: Optional[int] = None
+        self.name = None
+        self.size = None
         self.italic = False
         self.bold = False
         self.underline = False
@@ -40,6 +40,19 @@ class Font:
             if self.color:
                 res['color'] = self.color
             return res
+
+
+class VAlign(enum.IntEnum):
+    TOP = 0
+    CENTER = 1
+    BOTTOM = 2
+
+
+class HAlign(enum.IntEnum):
+    LEFT = 0
+    CENTER = 1
+    RIGHT = 2
+    JUSTIFY = 3
 
 
 class Border:
@@ -81,9 +94,15 @@ _re_number_fmt = re.compile(r'\.(\d)f')
 class DisplayFormat:
     __slots__ = ('format', 'kind', 'decimal_pos')
 
-    def __init__(self, format: str, kind: str):
+    def __init__(self, format: str = None, kind: str = None):
         self.format: str = format
         self.kind: str = kind
+        self.decimal_pos = None
+
+    def load(self, data: dict):
+        self.format = data['format']
+        self.kind = data['kind']
+        self.decimal_pos = data.get('decimal_pos')
 
     def update_format(self):
         if self.kind == 'Numeric':

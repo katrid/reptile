@@ -6,11 +6,11 @@ from jinja2 import Template
 
 from reptile import EnvironmentSettings
 from reptile.core import (
-    ReportObject, Font, Border, DisplayFormat, Highlight, Padding
+    ReportObject, Border, DisplayFormat, Highlight, Padding, Font, VAlign, HAlign
 )
 from reptile.runtime import PreparedText
 from reptile.data import DataSource
-from .bands import TAG_REGISTRY
+from .bands import TAG_REGISTRY, Band
 
 logger = logging.getLogger('reptile')
 
@@ -37,19 +37,6 @@ class BandObject(ReportObject):
         self.top = structure.get('y', structure.get('top'))
         self.height = structure.get('height')
         self.width = structure.get('width')
-
-
-class VAlign(enum.IntEnum):
-    TOP = 0
-    CENTER = 1
-    BOTTOM = 2
-
-
-class HAlign(enum.IntEnum):
-    LEFT = 0
-    CENTER = 1
-    RIGHT = 2
-    JUSTIFY = 3
 
 
 class Text(BandObject):
@@ -81,6 +68,7 @@ class Text(BandObject):
     display_format: DisplayFormat = None
     calc_size = None
     highlight: Highlight = None
+    opacity = 1
 
     def __init__(self, text: str = None):
         super().__init__()
@@ -138,13 +126,14 @@ class Text(BandObject):
                 if border.get('left'):
                     self.border.left = True
 
-        bg = structure.get('background')
-        if bg:
+
+        if bg := structure.get('background'):
             self.background = bg.get('color')
 
         disp_fmt = structure.get('displayFormat')
         if disp_fmt:
-            self.display_format = DisplayFormat(disp_fmt['format'], disp_fmt.get('kind'))
+            self.display_format = DisplayFormat()
+            self.display_format.load(disp_fmt)
         highlight = structure.get('highlights')
         if highlight:
             self.highlight = Highlight(highlight[0])
@@ -187,7 +176,10 @@ class Text(BandObject):
     @property
     def template(self):
         if self._template is None:
-            self._template = EnvironmentSettings.env.from_string(self.text, {'this': self})
+            text = self.text
+            if self.display_format and '}}' in text:
+                text = text.replace('}}', f'|display_format(("{self.display_format.kind}","{self.display_format.format}"))' + '}}', 1)
+            self._template = EnvironmentSettings.env.from_string(text, {'this': self})
         return self._template
 
     def template2(self, text: str):
@@ -300,11 +292,24 @@ class Image(BandObject):
             self.size_mode = SizeMode.NORMAL
 
 
-class Line(BandObject):
-    size = 0
+class LineStyle(enum.IntEnum):
+    SOLID = 0
+    DASHED = 1
+    DOTTED = 2
 
-    def __init__(self, band):
-        self.border = Border()
+
+class Line(BandObject):
+    line_width = 1
+    direction = 0
+    color = '#000000'
+    line_style = 0
+
+    def load(self, data: dict):
+        super().load(data)
+        self.line_width = data.get('lineWidth', self.line_width)
+        self.direction = data.get('direction', self.direction)
+        self.color = data.get('color', self.color)
+        self.line_style = data.get('lineStyle', self.line_style)
 
     def prepare(self, stream: List, context):
         from reptile.runtime import PreparedLine
@@ -313,7 +318,10 @@ class Line(BandObject):
         line.top = self.top
         line.width = self.width
         line.height = self.height
-        line.size = self.size
+        line.line_width = self.line_width
+        line.line_style = self.line_style
+        line.direction = self.direction
+        line.color = self.color
         stream.append(line)
 
 
@@ -373,3 +381,4 @@ TAG_REGISTRY['text'] = Text
 TAG_REGISTRY['Text'] = Text
 TAG_REGISTRY['image'] = Image
 TAG_REGISTRY['Image'] = Image
+TAG_REGISTRY['Line'] = Line

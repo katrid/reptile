@@ -6,6 +6,7 @@ from PySide6.QtCore import QMarginsF, QSizeF, QSize, QPoint
 
 from reptile.runtime import PreparedBand, PreparedText, PreparedImage, PreparedLine, PreparedBarcode
 from reptile.engines.qt import BandRenderer, TextRenderer, ImageRenderer, LineRenderer, BarcodeRenderer
+from reptile.bands import Watermark
 from reptile.core.units import mm
 
 
@@ -43,23 +44,25 @@ class PDF:
     def export_bytes(self):
         with tempfile.NamedTemporaryFile(suffix='.pdf') as tmp:
             self.export(tmp.name)
-            b = tmp.read()
-            return b
+            return tmp.read()
 
-    def draw_watermark(self, wm, page):
+    def draw_watermark(self, wm: Watermark, page):
         self.painter.save()
-        self.painter.setFont(QFont('Helvetica', wm.get('size', 72)))
-        self.painter.rotate(wm.get('angle', 0))
-        self.painter.setPen(QPen(QColor(0)))
-        self.painter.setOpacity(wm.get('opacity', .3))
-        self.painter.drawText(QPoint(page.width - self.painter.fontMetrics().horizontalAdvance(wm.get('text')) - (page.x * 1.5), page.height/2), wm.get('text'))
+        self.painter.setFont(wm.font)
+        self.painter.rotate(wm.angle)
+        self.painter.setPen(wm.font.color)
+        # self.painter.setOpacity(wm.get('opacity', .3))
+        self.painter.drawText(
+            QPoint(page.width - self.painter.fontMetrics().horizontalAdvance(wm.text), page.height/2),
+            wm.text
+        )
         self.painter.restore()
 
     def exportPage(self, page):
         if not self._isFirstPage:
             self.printer.newPage()
-        if watermark := getattr(page, 'watermark'):
-            self.draw_watermark(watermark, page)
+        if page.watermark:
+            self.draw_watermark(page.watermark, page)
         for band in page.bands:
             self.exportBand(band)
 

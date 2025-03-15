@@ -1,5 +1,6 @@
 from typing import List, TYPE_CHECKING
-from dataclasses import dataclass
+
+from reptile.core import Report
 
 
 class Document:
@@ -103,24 +104,14 @@ class PreparedImage:
 
 
 class PreparedLine:
-    __slots__ = ('left', 'top', 'height', 'width', 'size')
+    __slots__ = ('left', 'top', 'height', 'width', 'direction', 'line_width', 'color', 'style')
 
     def __init__(self):
         self.left = 0
         self.top = 0
         self.height = 0
         self.width = 0
-        self.size = 0
-
-    def dump(self):
-        return {
-            'left': self.left,
-            'top': self.top,
-            'height': self.height,
-            'width': self.width,
-            'size': self.size,
-        }
-
-
-if TYPE_CHECKING:
-    from reptile.engine import Report
+        self.line_width = 1
+        self.direction = 0
+        self.color = 0
+        self.style = 0

@@ -42,6 +42,13 @@ class Report:
         if isinstance(file, dict):
             self.load(file)
 
+    def find_object(self, name):
+        for obj in self.pages:
+            if obj.name == name:
+                return obj
+            if sobj := obj.find_object(name):
+                return sobj
+
     def load(self, structure: dict):
         rep = structure['report']
         for ds in rep['datasources']:
@@ -54,7 +61,7 @@ class Report:
             from reptile.bands import Page
             page = Page()
             self.add_page(page)
-            page.load(p, rep.get('watermark'))
+            page.load(p)
 
     def dump(self) -> dict:
         return {

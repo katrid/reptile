@@ -82,23 +82,17 @@ class PreparedImage:
 
 
 class PreparedLine:
-    __slots__ = ('left', 'top', 'height', 'width', 'size')
+    __slots__ = ('left', 'top', 'height', 'width', 'direction', 'line_width', 'color', 'line_style')
 
     def __init__(self):
         self.left = 0
         self.top = 0
         self.height = 0
         self.width = 0
-        self.size = 0
-
-    def dump(self):
-        return {
-            'left': self.left,
-            'top': self.top,
-            'height': self.height,
-            'width': self.width,
-            'size': self.size,
-        }
+        self.line_width = 1
+        self.direction = 0
+        self.color = 0
+        self.line_style = 0
 
 
 class Heading(PreparedText):
@@ -170,16 +164,16 @@ class Line(Container):
 class PreparedPage:
     __slots__ = ('height', 'width', 'bands', 'index', 'margin', 'x', 'y', 'ay', 'watermark')
 
-    def __init__(self, height, width, margin=None, watermark=None):
+    def __init__(self, height, width, margin=None):
         self.height = height
         self.width = width
-        self.watermark = watermark
         if margin:
             self.y = margin.top
             self.ay = height - margin.bottom
             self.x = margin.left
         self.bands: List[PreparedBand] = []
         self.margin = margin
+        self.watermark = None
 
     def add_band(self, left, top, width, height):
         band = PreparedBand(left, top, width, height)

@@ -8,7 +8,7 @@ from jinja2 import Template
 
 from reptile import EnvironmentSettings
 from reptile.runtime import PreparedPage, PreparedBand
-from reptile.core import ReportObject, BasePage, Report, Margin, mm
+from reptile.core import ReportObject, BasePage, Report, Margin, mm, VAlign, Font
 from reptile.data import DataSource
 
 
@@ -16,17 +16,19 @@ class Page(BasePage):
     _page_header = None
     _page_footer = None
     _report_title = None
+    _first_time = False
+    _bottom_height = 0
     report: Report = None
     _context: dict = None
     _current_page: PreparedPage = None
     width: float = 0
     height: float = 0
-    title_before_header = True
+    title_before_header = False
     reset_page_number = False
     stream = None
-    subreport: 'SubReport' = None
+    subreport = None
     _pending_operations = None
-    watermark = None
+    watermark: 'Watermark' = None
 
     def __init__(self):
         self.height = 297 * mm
@@ -37,6 +39,14 @@ class Page(BasePage):
         self._page_size = None
         self.orientation = 'portrait'
 
+    def find_object(self, name: str):
+        for band in self.bands:
+            if band.name == name:
+                return band
+            for obj in band.objects:
+                if obj.name == name:
+                    return obj
+
     @property
     def margin(self):
         return self.margins
@@ -45,12 +55,12 @@ class Page(BasePage):
     def margin(self, value):
         self.margins = value
 
-    def load(self, structure: dict, watermark=None):
+    def load(self, structure: dict):
         self.height = structure.get('height', self.height)
         self.width = structure.get('width', self.width)
-        self.watermark = watermark
         self._pending_operations = defaultdict(list)
         self.orientation = structure.get('orientation', self.orientation)
+        self.title_before_header = structure.get('titleBeforeHeader', self.title_before_header)
         bands = {}
         for b in structure['bands']:
             band = TAG_REGISTRY[b['type']]()
@@ -106,9 +116,8 @@ class Page(BasePage):
             elif isinstance(band, GroupFooter):
                 band.group_header.children.append(band)
 
+        self._first_time = True
         page = self.new_page(self._context)
-        if self._report_title:
-            self._report_title.prepare(page, self._context)
 
         for band in self.bands:
             # Only root bands should be processed here
@@ -123,15 +132,23 @@ class Page(BasePage):
         self.end_page(page, self._context)
 
     def new_page(self, context):
+        is_first_time = self._first_time
+        self._first_time = False
         if self._current_page is not None:
             self.end_page(self._current_page, context)
-        page = PreparedPage(self.height, self.width, self.margin, self.watermark)
+        page = PreparedPage(self.height, self.width, self.margin)
         self.report.page_count += 1
         page.index = self.report.page_count
         context['page_index'] = page.index
         page.bands = []
+
+        if is_first_time and self.title_before_header and self._report_title:
+            self._report_title.prepare(page, context)
         if self._page_header:
             self._page_header.prepare(page, context)
+        if is_first_time and not self.title_before_header and self._report_title:
+            self._report_title.prepare(page, context)
+
         if self._page_footer:
             page.ay -= self._page_footer.height
         self._current_page = page
@@ -142,9 +159,10 @@ class Page(BasePage):
 
     def end_page(self, page: PreparedPage, context):
         if self._page_footer:
-            page.ay += self._page_footer.height
+            page.ay += self._page_footer.height + self._bottom_height
             page.y = page.ay - self._page_footer.height
             self._page_footer.prepare(page, context)
+        self._bottom_height = 0
 
     def set_report(self, value: Report):
         if self._report and self in self._report.pages:
@@ -172,6 +190,7 @@ class Band(ReportObject):
     band_type = 'Band'
     auto_height = False
     child_band: 'ChildBand' = None
+    print_on_bottom = False
     _x = _y = 0
 
     def __init__(self, page: Page=None):
@@ -186,6 +205,7 @@ class Band(ReportObject):
         self.height = data.get('height', self.height)
         self.width = data.get('width', self.width or (self._page and self._page.width))
         self.name = data.get('name')
+        self.print_on_bottom = data.get('printOnBottom', self.print_on_bottom)
         if child_band := data.get('childBand'):
             self.page._pending_operations[child_band].append(partial(setattr, self, 'child_band'))
 
@@ -219,6 +239,8 @@ class Band(ReportObject):
         page = self.prepare_objects(page, context)
         if self.subreports:
             self.prepare_subreports(page, context)
+        if self.child_band:
+            page = self.child_band.prepare(page, context)
         return page
 
     def prepare_objects(self, page: PreparedPage, context):
@@ -228,8 +250,12 @@ class Band(ReportObject):
         objs = band.objects = []
         band.height = self.height
         band.width = self.width
-        band.left = page.x
-        band.top = page.y
+        if self.print_on_bottom:
+            band.left = page.x
+            band.top = page.ay - band.height
+        else:
+            band.left = page.x
+            band.top = page.y
         for obj in self.objects:
             new_obj = obj.prepare(objs, context)
             if new_obj and (new_obj.height + new_obj.top) > band.height:
@@ -244,7 +270,11 @@ class Band(ReportObject):
             and (band.bottom + band.objects[0].height + band.objects[0].top) > page.ay
         ):
             page.bands.append(band)
-        page.y = band.bottom
+        if self.print_on_bottom:
+            page.ay -= band.height
+            self.page._bottom_height += band.height
+        else:
+            page.y = band.bottom
         # save position
         self._x = band.left
         self._y = band.top
@@ -364,10 +394,6 @@ class DataProxy:
         return len(self.data)
 
 
-class ChildBand(Band):
-    pass
-
-
 class DataBand(Band):
     band_type = 'DataBand'
     _datasource: DataSource = None
@@ -375,10 +401,12 @@ class DataBand(Band):
     header: 'HeaderBand' = None
     footer: 'FooterBand' = None
     group_header: 'GroupHeader' = None
+    expression: str = None
 
     def load(self, structure: dict):
         super().load(structure)
         self.datasource = structure.get('datasource')
+        self.expression = structure.get('expression')
         if name := structure.get('groupHeader'):
             self.page._pending_operations[name].append(partial(setattr, self, 'group_header'))
         if name := structure.get('header'):
@@ -393,6 +421,7 @@ class DataBand(Band):
             # 'row_count': self.row_count,
             'header': self.header.name if self.header else None,
             'footer': self.footer.name if self.footer else None,
+            'expression': self.expression,
             # 'group_header': self.group_header.dump() if self.group_header else None,
         }
 
@@ -418,7 +447,7 @@ class DataBand(Band):
             context['row'] = i + 1
             context['line'] += 1
             if self.name:
-                context[self.name] = self
+                context[self.name] = row
             even = context['even'] = bool(i % 2)
             context['odd'] = not even
             page = super().prepare(page, context)
@@ -434,6 +463,8 @@ class DataBand(Band):
         if self.datasource:
             self.datasource.open()
             return self.datasource.data
+        elif self.expression:
+            return self.page.report._context[self.expression]
         elif self.row_count:
             return range(self.row_count)
 
@@ -558,6 +589,15 @@ class GroupFooter(Band):
     group_header: GroupHeader = None
 
 
+class Watermark:
+    enabled = False
+    text = ''
+    valign: VAlign = VAlign.CENTER
+    font: Font = None
+    image = None
+    angle = 0
+
+
 TAG_REGISTRY = {
     'ReportTitle': ReportTitle,
     'HeaderBand': HeaderBand,
@@ -567,5 +607,5 @@ TAG_REGISTRY = {
     'PageFooter': PageFooter,
     'PageHeader': PageHeader,
     'DataBand': DataBand,
-    'ChildBand': DataBand,
+    'ChildBand': ChildBand,
 }
