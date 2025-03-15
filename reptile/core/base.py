@@ -101,7 +101,7 @@ class DisplayFormat:
 
     def load(self, data: dict):
         self.format = data['format']
-        self.kind = data['kind']
+        self.kind = data.get('kind', data.get('type'))
         self.decimal_pos = data.get('decimal_pos')
 
     def update_format(self):
