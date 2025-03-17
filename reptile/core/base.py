@@ -104,10 +104,6 @@ class DisplayFormat:
         self.kind = data.get('kind', data.get('type'))
         self.decimal_pos = data.get('decimal_pos')
 
-    def update_format(self):
-        if self.kind == 'Numeric':
-            self.decimal_pos = _re_number_fmt.match(self.format)
-
     def dump(self) -> dict:
         return {
             'format': self.format,
