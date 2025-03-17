@@ -1,5 +1,5 @@
 from decimal import Decimal
-import re
+import datetime
 
 MASK_MAP = ['9', '0', '#']
 
@@ -48,4 +48,10 @@ def display_format(value, fmt):
             v = fmt.format(float(value))
             if '.' in v and dec_settings.decimal_sep != '.':
                 return v.replace('.', '%').replace(',', dec_settings.thousand_sep).replace('%', dec_settings.decimal_sep)
+    elif kind == 'DateTime':
+        if isinstance(value, str):
+            value = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+        elif value is None:
+            return ''
+        return value.strftime(fmt)
     return str(value)
