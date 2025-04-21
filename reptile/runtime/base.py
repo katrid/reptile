@@ -62,7 +62,7 @@ class PreparedPage:
 class PreparedText:
     __slots__ = (
         'left', 'top', 'height', 'width', 'allow_tags', 'text', 'font_name', 'font_size', 'font_bold', 'font_italic',
-        'background', 'brush_style', 'valign', 'halign', 'border', 'word_wrap', 'can_grow', 'error', 'qrcode'
+        'background', 'brush_style', 'valign', 'halign', 'border', 'word_wrap', 'can_grow', 'error',
     )
 
     def __init__(self, text=None, left=0, top=0):
@@ -77,7 +77,6 @@ class PreparedText:
         self.font_size = 9
         self.background = None
         self.error = False
-        self.qrcode = False
 
     def dump(self):
         return {

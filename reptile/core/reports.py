@@ -208,7 +208,7 @@ class Report:
         """
         self._line = self.stream.new_line()
 
-    def new_page(self):
+    def new_prepared_page(self):
         return self.stream.new_page()
 
     def log(self, s: str):

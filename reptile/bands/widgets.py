@@ -8,7 +8,7 @@ from reptile import EnvironmentSettings
 from reptile.core import (
     ReportObject, Border, DisplayFormat, Highlight, Padding, Font, VAlign, HAlign
 )
-from reptile.runtime import PreparedText
+from reptile.runtime import PreparedText, SizeMode
 from reptile.data import DataSource
 from .bands import TAG_REGISTRY, Band
 
@@ -245,7 +245,7 @@ class Image(BandObject):
     picture: bytes = None
     _datasource: DataSource = None
     field: str = None
-    size_mode = None
+    size_mode = SizeMode.NORMAL
 
     def prepare(self, stream: List, context):
         from reptile.runtime import PreparedImage
@@ -282,14 +282,11 @@ class Image(BandObject):
         super().load(structure)
         self.field = structure.get('field')
         size_mode = structure.get('sizeMode')
-        if size_mode == 'center':
-            self.size_mode = SizeMode.CENTER
-        elif size_mode == 'zoom':
-            self.size_mode = SizeMode.ZOOM
-        elif size_mode == 'stretch':
+        if size_mode == 'stretch':
+            # compatibility with old reports
             self.size_mode = SizeMode.STRETCH
-        else:
-            self.size_mode = SizeMode.NORMAL
+        elif size_mode is not None:
+            self.size_mode = size_mode
 
 
 class LineStyle(enum.IntEnum):

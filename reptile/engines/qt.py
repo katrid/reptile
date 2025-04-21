@@ -278,13 +278,9 @@ class ImageRenderer:
         img.loadFromData(obj.picture)
         painter.save()
         painter.translate(x + obj.left, y + obj.top)
-        if obj.size_mode == SizeMode.NORMAL:
-            painter.setClipRect(QRect(0, 0, obj.width, obj.height))
-            painter.drawPixmap(0, 0, img)
-        elif obj.size_mode == SizeMode.ZOOM:
+        if obj.size_mode == SizeMode.ZOOM:
             painter.drawPixmap(
-                0, 0,
-                img.scaled(obj.width, obj.height, Qt.AspectRatioMode.KeepAspectRatio)
+                0, 0, img.scaled(obj.width, obj.height, Qt.AspectRatioMode.KeepAspectRatio)
             )
         elif obj.size_mode == SizeMode.STRETCH:
             painter.drawPixmap(0, 0, obj.width, obj.height, img)
@@ -294,6 +290,11 @@ class ImageRenderer:
             x = (obj.width - pt.width()) / 2
             y = (obj.height - pt.height()) / 2
             painter.drawPixmap(x, y, img)
+        elif obj.size_mode == SizeMode.AUTO:
+            painter.drawPixmap(0, 0, img)
+        else:
+            painter.setClipRect(QRect(0, 0, obj.width, obj.height))
+            painter.drawPixmap(0, 0, img)
         painter.restore()
 
 

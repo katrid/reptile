@@ -723,7 +723,6 @@ class Text(Widget):
     _template = None
     _rendered_text = None
     _word_wrap = False
-    qrcode = False
     _text_word_wrap = 0
     paddingX = 2
     paddingY = 2
@@ -826,7 +825,6 @@ class Text(Widget):
         obj.can_grow = self.can_grow
         obj.can_shrink = self.can_shrink
         obj._text_word_wrap = self._text_word_wrap
-        obj.qrcode = self.qrcode
         if self.allow_expressions and self.template:
             prepared_band.context['this'] = self
             obj.text = self.template.render(prepared_band.context)
