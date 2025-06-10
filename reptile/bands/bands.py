@@ -38,6 +38,7 @@ class Page(BasePage):
         self.margins = Margin()
         self._page_size = None
         self.orientation = 'portrait'
+        self.watermark = Watermark()
 
     def find_object(self, name: str):
         for band in self.bands:
@@ -46,6 +47,7 @@ class Page(BasePage):
             for obj in band.objects:
                 if obj.name == name:
                     return obj
+        return None
 
     @property
     def margin(self):
@@ -62,6 +64,9 @@ class Page(BasePage):
         self.orientation = structure.get('orientation', self.orientation)
         self.title_before_header = structure.get('titleBeforeHeader', self.title_before_header)
         bands = {}
+        if 'watermark' in structure:
+            self.watermark = Watermark()
+            self.watermark.load(structure['watermark'])
         for b in structure['bands']:
             band = TAG_REGISTRY[b['type']]()
             self.add_band(band)
@@ -137,6 +142,7 @@ class Page(BasePage):
         if self._current_page is not None:
             self.end_page(self._current_page, context)
         page = PreparedPage(self.height, self.width, self.margin)
+        page.watermark = self.watermark
         self.report.page_count += 1
         page.index = self.report.page_count
         context['page_index'] = page.index
@@ -237,13 +243,14 @@ class Band(ReportObject):
 
     def prepare(self, page: PreparedPage, context):
         page = self.prepare_objects(page, context)
-        if self.subreports:
-            self.prepare_subreports(page, context)
+        # if self.subreports:
+        #     self.prepare_subreports(page, context)
         if self.child_band:
             page = self.child_band.prepare(page, context)
         return page
 
     def prepare_objects(self, page: PreparedPage, context):
+        # from .subreport import SubReport
         context = self._context = context or self.page._context
         band = PreparedBand()
         band.band_type = self.band_type
@@ -257,6 +264,9 @@ class Band(ReportObject):
             band.left = page.x
             band.top = page.y
         for obj in self.objects:
+            # if isinstance(obj, SubReport):
+            #     obj.prepare(page, context)
+            # else:
             new_obj = obj.prepare(objs, context)
             if new_obj and (new_obj.height + new_obj.top) > band.height:
                 band.height = new_obj.height + new_obj.top
@@ -591,11 +601,24 @@ class GroupFooter(Band):
 
 class Watermark:
     enabled = False
-    text = ''
+    text = None
     valign: VAlign = VAlign.CENTER
     font: Font = None
     image = None
     angle = 0
+    opacity = 0.7
+
+    def __init__(self):
+        pass
+
+    def load(self, structure: dict):
+        self.enabled = structure.get('enabled', self.enabled)
+        self.text = structure.get('text', self.text)
+        self.valign = VAlign(structure.get('valign', self.valign.name))
+        self.image = structure.get('image')
+        self.angle = structure.get('angle', self.angle)
+        if 'font' in structure:
+            self.font = Font()
 
 
 TAG_REGISTRY = {

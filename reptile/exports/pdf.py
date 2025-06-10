@@ -1,8 +1,10 @@
 import tempfile
 
-from PySide6.QtGui import QPainter, QFont, QGuiApplication, QPageSize, QPageLayout, QPdfWriter, QPen, QColor
+from PySide6.QtGui import (
+    QPainter, QFont, QGuiApplication, QPageSize, QPageLayout, QPdfWriter, QPen, QColor, QTextOption,
+)
 from PySide6.QtPrintSupport import QPrinter
-from PySide6.QtCore import QMarginsF, QSizeF, QSize, QPoint
+from PySide6.QtCore import QMarginsF, QSizeF, QSize, QPoint, Qt, QRectF
 
 from reptile.runtime import PreparedBand, PreparedText, PreparedImage, PreparedLine, PreparedBarcode
 from reptile.engines.qt import BandRenderer, TextRenderer, ImageRenderer, LineRenderer, BarcodeRenderer
@@ -48,14 +50,26 @@ class PDF:
 
     def draw_watermark(self, wm: Watermark, page):
         self.painter.save()
-        self.painter.setFont(wm.font)
+        if wm.font:
+            self.painter.setFont(wm.font)
+            self.painter.setPen(wm.font.color)
+        else:
+            self.painter.setFont(QFont('Helvetica', 78, QFont.Bold))
+            self.painter.setPen(QPen(QColor(128, 128, 128), 1))
         self.painter.rotate(wm.angle)
-        self.painter.setPen(wm.font.color)
-        # self.painter.setOpacity(wm.get('opacity', .3))
+        self.painter.setOpacity(wm.opacity)
+        # draw text at the center of the page
+        # with word wrapping
         self.painter.drawText(
-            QPoint(page.width - self.painter.fontMetrics().horizontalAdvance(wm.text), page.height/2),
-            wm.text
+            QRectF(0, 0, page.width, page.height),
+            Qt.AlignCenter | Qt.TextFlag.TextWordWrap,
+            wm.text,
         )
+
+        # self.painter.drawText(
+        #     QPoint(page.width - self.painter.fontMetrics().horizontalAdvance(wm.text), page.height/2),
+        #     wm.text
+        # )
         self.painter.restore()
 
     def exportPage(self, page):

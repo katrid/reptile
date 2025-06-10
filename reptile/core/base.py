@@ -150,7 +150,7 @@ class Padding:
     def __bool__(self):
         return bool(self.left or self.top or self.right or self.bottom)
 
-    def dump(self) -> dict | None:
+    def dump(self) -> Optional[dict]:
         if self:
             return {
                 'left': self.left,
@@ -158,6 +158,7 @@ class Padding:
                 'right': self.right,
                 'bottom': self.bottom,
             }
+        return None
 
 
 class Margin:
